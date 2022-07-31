@@ -28,5 +28,5 @@ jobs:
             git add .
             git commit --allow-empty -m "Push from CMake Build on Mac"
             git push origin HEAD:build
-            gh pr create -B origin/workflows -t "from Git Push Test" -b ""
+            gh pr create --base workflows --head build --title "from Git Push Test" --body ""
           fi
