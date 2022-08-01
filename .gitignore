@@ -15,7 +15,7 @@
 *.pch
 
 # Compiled Dynamic libraries
-# *.so*
+*.so*
 *.dylib
 *.dll
 *.pyd
@@ -31,7 +31,7 @@
 *.lib
 
 # Executables
-# *.exe
+*.exe
 *.out
 *.app
 
