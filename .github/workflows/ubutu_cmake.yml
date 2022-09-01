@@ -1,0 +1,64 @@
+name: CMake Build on Ubuntu
+env:
+  CMAKE_VERSION: 3.20.1
+  BUILD_TYPE: Release
+
+on:
+  push:
+    paths:
+      - '.github/workflows/ubuntu_cmake.yml'
+  workflow_dispatch:
+jobs:
+  build:
+    name: build on Ubuntu
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/cache@v2
+        with:
+          path: |
+            ~/.conan
+            build
+          key: ${{ runner.os }}
+      - uses: chetan/git-restore-mtime-action@v1.0
+      - name: Install Library
+        run: |
+          sudo apt-get update
+          sudo apt-get install tcl8.6-dev
+          sudo apt-get install tk8.6-dev
+          sudo apt-get install openmpi-bin
+          sudo apt-get install apt-file
+          sudo apt-file update
+          pip install conan
+      - name: Check Library
+        run: |
+          echo "puts [info tclversion]" | tclsh          
+          cmake --version
+          gfortran --version
+          ompi_info | head
+          python --version
+          conan --version
+      - name: mkdir and conan
+        run: |
+          mkdir -p build
+          mkdir -p linux
+          cd build
+          conan install ..
+          cmake -S .. -B ./
+          cmake --build ./ --target OpenSees
+          cmake --build ./ --target OpenSeesPy
+          mv ./lib/OpenSeesPy.so ./lib/opensees.so
+          cp ./lib/opensees.so ./../linux/
+          cp ./bin/OpenSees ./../linux/
+# Verification
+      - name: Verification OpenSeesPySP
+        run: |
+          cd ./EXAMPLES/ExamplePython/
+          export PYTHONPATH="../../build/lib/"
+          python -c "import sys; print(sys.path)"
+          python example_variable_analysis.py
+# Save
+      - uses: actions/upload-artifact@v1
+        with:
+          name: linux-artifact
+          path: ./linux
