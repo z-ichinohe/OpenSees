@@ -8,6 +8,7 @@ on:
     paths:
       - '.github/workflows/ubuntu_cmake.yml'
   workflow_dispatch:
+
 jobs:
   build:
     name: build on Ubuntu
@@ -21,14 +22,17 @@ jobs:
             build
           key: ${{ runner.os }}
       - uses: chetan/git-restore-mtime-action@v1.0
+# Install and Check Library
       - name: Install Library
         run: |
-          sudo apt-get update
+          sudo apt update && sudo apt upgrade -y
           sudo apt-get install tcl8.6-dev
           sudo apt-get install tk8.6-dev
           sudo apt-get install openmpi-bin
           sudo apt-get install apt-file
           sudo apt-file update
+          sudo apt-get install python3.9
+          sudo apt-get install gcc-11
           pip install conan
       - name: Check Library
         run: |
@@ -38,7 +42,8 @@ jobs:
           ompi_info | head
           python --version
           conan --version
-      - name: mkdir and conan
+# Build
+      - name: Build
         run: |
           mkdir -p build
           mkdir -p linux
