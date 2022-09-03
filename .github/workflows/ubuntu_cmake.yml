@@ -55,6 +55,7 @@ jobs:
         env:
           CC: gcc-11
           CXX: g++-11
+          fortran: gfortran-11
         run: |
           echo "puts [info tclversion]" | tclsh          
           cmake --version
@@ -67,6 +68,7 @@ jobs:
         env:
           CC: gcc-11
           CXX: g++-11
+          fortran: gfortran-11
         run: |
           mkdir -p build
           mkdir -p linux
