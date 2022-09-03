@@ -15,6 +15,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0       
       - uses: actions/cache@v2
         with:
           path: |
@@ -28,23 +30,41 @@ jobs:
           sudo apt update && sudo apt upgrade -y
           sudo apt-get install tcl8.6-dev
           sudo apt-get install tk8.6-dev
-          sudo apt-get install openmpi-bin
           sudo apt-get install apt-file
           sudo apt-file update
           sudo apt-get remove python3.8
           sudo apt-get remove --auto-remove python3.8
-          sudo apt-get install python3.9
+          sudo apt-get install python3-pip
+          python --version
+          python3 --version
+          pip --version
+          pip3 --version
+          where pip3
+          pip install conan
           sudo apt-get remove gcc-9
           sudo apt-get remove --auto-remove gcc-9
           sudo apt-get install gcc-11
-          pip3 install conan
+          sudo apt-get update
+          sudo apt-get install liblapack-dev
+          sudo apt-get install libopenmpi-dev
+          # sudo apt-get install openmpi-bin
+          sudo apt-get install libmkl-rt
+          sudo apt-get install libmkl-blacs-openmpi-lp64
+          sudo apt-get install libscalapack-openmpi-dev
+          git clone https://github.com/scivision/mumps.git
+          cd mumps
+          mkdir build
+          cd build
+          cmake .. -Darith=d
+          cmake --build . --config Release --parallel 4
+          cd ..
       - name: Check Library
         run: |
           echo "puts [info tclversion]" | tclsh          
           cmake --version
           gfortran --version
           ompi_info | head
-          python --version
+          python3 --version
           conan --version
 # Build
       - name: Build
@@ -52,10 +72,10 @@ jobs:
           mkdir -p build
           mkdir -p linux
           cd build
-          conan install ..
-          cmake -S .. -B ./
-          cmake --build ./ --target OpenSees
-          cmake --build ./ --target OpenSeesPy
+          conan install .. --build missing
+          cmake .. -DMUMPS_DIR=$PWD/../../mumps/build -DOPENMPI=TRUE -DSCALAPACK_LIBRARIES="/usr/lib/x86_64-linux-gnu/libmkl_blacs_openmpi_lp64.so;/usr/lib/x86_64-linux-gnu/libscalapack-openmpi.so.2.1"
+          cmake --build . --config Release --target OpenSees
+          cmake --build ./ --config Release --target OpenSeesPy
           mv ./lib/OpenSeesPy.so ./lib/opensees.so
           cp ./lib/opensees.so ./../linux/
           cp ./bin/OpenSees ./../linux/
@@ -64,8 +84,8 @@ jobs:
         run: |
           cd ./EXAMPLES/ExamplePython/
           export PYTHONPATH="../../build/lib/"
-          python -c "import sys; print(sys.path)"
-          python example_variable_analysis.py
+          python3 -c "import sys; print(sys.path)"
+          python3 example_variable_analysis.py
 # Save
       - uses: actions/upload-artifact@v1
         with:
