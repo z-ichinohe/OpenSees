@@ -37,7 +37,7 @@ jobs:
           sudo apt-get remove gcc-9
           sudo apt-get remove --auto-remove gcc-9
           sudo apt-get install gcc-11
-          pip install conan
+          pip3 install conan
       - name: Check Library
         run: |
           echo "puts [info tclversion]" | tclsh          
