@@ -253,6 +253,7 @@ int IMKPeakOriented::setTrialStrain(double strain, double strainRate)
 			EiK     = Energy_Acc - Energy_Diss  - 0.5*(fi_1 / K_unload)*fi_1;
 			betaK   = pow( (EiK / (EtK - EpjK)), c_K );
 			K_unload    = K_unload * (1 - betaK);
+			TangentK	= K_unload;
 		// Detect unloading completed in a step.
 			if (fi_1*(fi_1+du*K_unload) <= 0) {
 				Excursion_Flag  = true;
@@ -391,112 +392,128 @@ int IMKPeakOriented::setTrialStrain(double strain, double strainRate)
 				}
 			}
 			df  = 0             - fi_1 + K_reload*  (ui - u0);
+			TangentK			= K_reload;
 // With Branch Change
 	// Positive Force
 		}
 		else if (Branch == 4 && exBranch != 4) {
 			K_reload    = (posFGlobal_1 - posFLocal_1) / (posUGlobal_1 - posULocal_1);
+			TangentK	= K_reload;
 			df  = posFLocal_1   - fi_1 + K_reload*  (ui - posULocal_1);
 		}
 		else if (Branch == 5 && exBranch == 0) {
+			TangentK	= posKp_1;
 			df  = posFy_1       - fi_1 + posKp_1*   (ui - posUy_1);
 		}
 		else if (Branch == 5 && exBranch != 5) {
+			TangentK	= posKp_1;
 			df  = posFGlobal_1  - fi_1 + posKp_1*   (ui - posUGlobal_1);
 		}
 		else if (Branch == 6 && exBranch == 5) {
+			TangentK	= posKpc_1;
 			df  = posFcap_1     - fi_1 + posKpc_1*  (ui - posUcap_1);
 		}
 		else if (Branch == 6 && exBranch != 6) {
+			TangentK	= posKpc_1;
 			df  = posFGlobal_1  - fi_1 + posKpc_1*  (ui - posUGlobal_1);
 		}
 		else if (Branch == 7 && exBranch != 7) {
+			TangentK	= 0;
 			df  = posFres_1     - fi_1;
 	// Negative Force
 		}
 		else if (Branch == 14 && exBranch != 14) {
 			K_reload    = (negFGlobal_1 - negFLocal_1) / (negUGlobal_1 - negULocal_1);
+			TangentK	= K_reload;
 			df          = negFLocal_1 - fi_1 + K_reload*(ui - negULocal_1);
 		}
 		else if (Branch == 15 && exBranch == 0) {
+			TangentK	= negKp_1;
 			df  = negFy_1 - fi_1 + negKp_1*(ui - negUy_1);
 		}
 		else if (Branch == 15 && exBranch != 15) {
+			TangentK	= negKp_1;
 			df  = negFGlobal_1 - fi_1 + negKp_1*(ui - negUGlobal_1);
 		}
 		else if (Branch == 16 && exBranch == 15) {
+			TangentK	= negKpc_1;
 			df  = negFcap_1 - fi_1 + negKpc_1*(ui - negUcap_1);
 		}
 		else if (Branch == 16 && exBranch != 16) {
+			TangentK	= negKpc_1;
 			df  = negFGlobal_1 - fi_1 + negKpc_1*(ui - negUGlobal_1);
 		}
 		else if (Branch == 17 && exBranch != 17) {
+			TangentK	= 0;
 			df  = negFres_1 - fi_1;
 // Without Branch Change
 
 	// Positive Force
 		// CASE 0: At THE ELASTIC SLOPE
-		}
-		else if (Branch == 0) {
-			df  = du*Ke;
-				//cout << "  Case = 0-" << endln;
+	// 	}
+	// 	else if (Branch == 0) {
+	// 		df  = du*Ke;
+	// 			//cout << "  Case = 0-" << endln;
 
-		// CASE 2: WHEN RELOADING
-				//cout << "  Case = 2-" << endln;
+	// 	// CASE 2: WHEN RELOADING
+	// 			//cout << "  Case = 2-" << endln;
 
-		// CASE 3: WHEN UNLOADING
-		}
-		else if (Branch == 1) {
-			df  = du*K_unload;
-				//cout << "  Case = 3-" << endln;
+	// 	// CASE 3: WHEN UNLOADING
+	// 	}
+	// 	else if (Branch == 1) {
+	// 		TangentK	= K_unload;
+	// 		df  = du*K_unload;
+	// 			//cout << "  Case = 3-" << endln;
 
-		// CASE 4: WHEN RELOADING BUT BETWEEN LAST CYCLE PEAK POINT AND GLOBAL PEAK POINT
-				//cout << "  Case = 4-" << endln;
+	// 	// CASE 4: WHEN RELOADING BUT BETWEEN LAST CYCLE PEAK POINT AND GLOBAL PEAK POINT
+	// 			//cout << "  Case = 4-" << endln;
 
-		// CASE 5: WHEN LOADING IN GENERAL TOWARDS THE TARGET PEAK
-				//cout << "  Case = 5-" << endln;
+	// 	// CASE 5: WHEN LOADING IN GENERAL TOWARDS THE TARGET PEAK
+	// 			//cout << "  Case = 5-" << endln;
 
-		// CASE 6: WHEN LOADING IN GENERAL TOWARDS THE LAST CYCLE PEAK POINT BUT BEYOND IT
-		}
-		else if (Branch == 3 || Branch == 4 || Branch == 13 || Branch == 14) {
-			df  = du*K_reload;
-				//cout << "  Case = 6-" << endln;
+	// 	// CASE 6: WHEN LOADING IN GENERAL TOWARDS THE LAST CYCLE PEAK POINT BUT BEYOND IT
+	// 	}
+	// 	else if (Branch == 3 || Branch == 4 || Branch == 13 || Branch == 14) {
+	// 		df  = du*K_reload;
+	// 			//cout << "  Case = 6-" << endln;
 
-		// CASE 7: WHEN LOADING BEYOND THE TARGET PEAK BUT BEFORE THE CAPPING POINT
-		}
-		else if (Branch == 5) {
-			df  = du*posKp_1;
-				//cout << "  Case = 7-" << endln;
+	// 	// CASE 7: WHEN LOADING BEYOND THE TARGET PEAK BUT BEFORE THE CAPPING POINT
+	// 	}
+	// 	else if (Branch == 5) {
+	// 		df  = du*posKp_1;
+	// 			//cout << "  Case = 7-" << endln;
 
-		// CASE 8: WHEN LOADING AND BETWEEN THE CAPPING POINT AND THE RESIDUAL POINT
-		}
-		else if (Branch == 6) {
-			df  = du*posKpc_1;
-		// CASE 9: WHEN LOADING AND BEYOND THE RESIDUAL POINT
-		}
-		else if (Branch == 7) {
-			df = 0.0;
-				//cout << "  Case = 9-" << endln;
+	// 	// CASE 8: WHEN LOADING AND BETWEEN THE CAPPING POINT AND THE RESIDUAL POINT
+	// 	}
+	// 	else if (Branch == 6) {
+	// 		df  = du*posKpc_1;
+	// 	// CASE 9: WHEN LOADING AND BEYOND THE RESIDUAL POINT
+	// 	}
+	// 	else if (Branch == 7) {
+	// 		df = 0.0;
+	// 			//cout << "  Case = 9-" << endln;
 
-	// Negative Force
-		// CASE 7: WHEN LOADING BEYOND THE TARGET PEAK BUT BEFORE THE CAPPING POINT
-		}
-		else if (Branch == 15) {
-			df  = du*negKp_1;
-			//cout << "  Case = 7-" << endln;
+	// // Negative Force
+	// 	// CASE 7: WHEN LOADING BEYOND THE TARGET PEAK BUT BEFORE THE CAPPING POINT
+	// 	}
+	// 	else if (Branch == 15) {
+	// 		df  = du*negKp_1;
+	// 		//cout << "  Case = 7-" << endln;
 
-		// CASE 8: WHEN LOADING AND BETWEEN THE CAPPING POINT AND THE RESIDUAL POINT
-		}
-		else if (Branch == 16) {
-			df  = du*negKpc_1;
-				//cout << "  Case = 8-" << endln;
+	// 	// CASE 8: WHEN LOADING AND BETWEEN THE CAPPING POINT AND THE RESIDUAL POINT
+	// 	}
+	// 	else if (Branch == 16) {
+	// 		df  = du*negKpc_1;
+	// 			//cout << "  Case = 8-" << endln;
 
-		// CASE 9: WHEN LOADING AND BEYOND THE RESIDUAL POINT
-		}
-		else if (Branch == 17) {
-			df = 0.0;
-				//cout << "  Case = 9-" << endln;
+	// 	// CASE 9: WHEN LOADING AND BEYOND THE RESIDUAL POINT
+	// 	}
+	// 	else if (Branch == 17) {
+	// 		df = 0.0;
+	// 			//cout << "  Case = 9-" << endln;
 
+		} else {
+			df	= du*TangentK;
 		}
 	// Branch Change check
 		// if (Branch!=exBranch) {
@@ -548,15 +565,15 @@ int IMKPeakOriented::setTrialStrain(double strain, double strainRate)
 	du_i_1 = du;
 
 	// Tangent Stiffeness Calculation
-
-	if ( du == 0 ) {
-		ki       = Ke;
-		TangentK = Ke;
-	}
-	else {
-		ki		 = (fi - fi_1) / (du);
-		TangentK = (fi - fi_1) / (du);
-	}
+	ki	= TangentK;
+	// if ( du == 0 ) {
+	// 	ki       = Ke;
+	// 	TangentK = Ke;
+	// }
+	// else {
+	// 	ki		 = (fi - fi_1) / (du);
+	// 	TangentK = (fi - fi_1) / (du);
+	// }
 
 	//cout << "  fi=" << fi << endln;
 	//cout << "***********************" << endln;
