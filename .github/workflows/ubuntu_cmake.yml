@@ -34,7 +34,6 @@ jobs:
           sudo apt-get install apt-file
           sudo apt-get install tcl8.6-dev
           sudo apt-get install tk8.6-dev
-          sudo apt-get install gcc-11
           sudo apt-get update
           sudo apt-get install liblapack-dev
           sudo apt-get install libopenmpi-dev
@@ -52,10 +51,6 @@ jobs:
           sudo apt-file update
           pip3 install conan
       - name: Check Library
-        env:
-          CC: gcc-11
-          CXX: g++-11
-          fortran: gfortran-11
         run: |
           echo "puts [info tclversion]" | tclsh          
           cmake --version
@@ -65,10 +60,6 @@ jobs:
           conan --version
 # Build
       - name: Build
-        env:
-          CC: gcc-11
-          CXX: g++-11
-          fortran: gfortran-11
         run: |
           mkdir -p build
           mkdir -p linux
