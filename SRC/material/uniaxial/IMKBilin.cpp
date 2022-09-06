@@ -60,8 +60,8 @@ OPS_IMKBilin(void)
 
     if (OPS_GetDoubleInput(&numData, dData) != 0) {
         opserr << "Invalid Args want: uniaxialMaterial IMKBilin tag? Ke? ";
-        opserr << "Up_pos? Upc_pos? Uu_pos? Mpe_pos? MmaxMpe_pos? ResM_pos? ";
-        opserr << "Up_neg? Upc_neg? Uu_neg? Mpe_neg? MmaxMpe_neg? ResM_neg? ";
+        opserr << "Up_pos? Upc_pos? Uu_pos? My_pos? MmaxMy_pos? ResM_pos? ";
+        opserr << "Up_neg? Upc_neg? Uu_neg? My_neg? MmaxMy_neg? ResM_neg? ";
         opserr << "LamdaS?  LamdaC? LamdaK? Cs? Cc? Ck? D_pos? D_neg? ";
         return 0;
     }
@@ -83,12 +83,12 @@ OPS_IMKBilin(void)
 }
 
 IMKBilin::IMKBilin(int tag, double	p_Ke,
-    double	p_posUp_0, double	p_posUpc_0, double	p_posUu_0, double	p_posMpe_0, double	p_posMmaxMpe_0, double	p_posResM_0,
-    double	p_negUp_0, double	p_negUpc_0, double	p_negUu_0, double	p_negMpe_0, double	p_negMmaxMpe_0, double	p_negResM_0,
+    double	p_posUp_0, double	p_posUpc_0, double	p_posUu_0, double	p_posFy_0, double	p_posFcapFy_0, double	p_posResF_0,
+    double	p_negUp_0, double	p_negUpc_0, double	p_negUu_0, double	p_negFy_0, double	p_negFcapFy_0, double	p_negResF_0,
     double	p_LAMBDA_S, double	p_LAMBDA_C, double	p_LAMBDA_K, double	p_c_S, double	p_c_C, double	p_c_K, double	p_D_pos, double	p_D_neg)
     :UniaxialMaterial(tag, 0), Ke(p_Ke),
-    posUp_0(p_posUp_0), posUpc_0(p_posUpc_0), posUu_0(p_posUu_0), posMpe_0(p_posMpe_0), posMmaxMpe_0(p_posMmaxMpe_0), posResM_0(p_posResM_0),
-    negUp_0(p_negUp_0), negUpc_0(p_negUpc_0), negUu_0(p_negUu_0), negMpe_0(p_negMpe_0), negMmaxMpe_0(p_negMmaxMpe_0), negResM_0(p_negResM_0),
+    posUp_0(p_posUp_0), posUpc_0(p_posUpc_0), posUu_0(p_posUu_0), posFy_0(p_posFy_0), posFcapFy_0(p_posFcapFy_0), posResF_0(p_posResF_0),
+    negUp_0(p_negUp_0), negUpc_0(p_negUpc_0), negUu_0(p_negUu_0), negFy_0(p_negFy_0), negFcapFy_0(p_negFcapFy_0), negResF_0(p_negResF_0),
     LAMBDA_S(p_LAMBDA_S), LAMBDA_C(p_LAMBDA_C), LAMBDA_K(p_LAMBDA_K), c_S(p_c_S), c_C(p_c_C), c_K(p_c_K), D_pos(p_D_pos), D_neg(p_D_neg)
 {
     this->revertToStart();
@@ -96,8 +96,8 @@ IMKBilin::IMKBilin(int tag, double	p_Ke,
 
 IMKBilin::IMKBilin()
     :UniaxialMaterial(0, 0), Ke(0),
-    posUp_0(0), posUpc_0(0), posUu_0(0), posMpe_0(0), posMmaxMpe_0(0), posResM_0(0),
-    negUp_0(0), negUpc_0(0), negUu_0(0), negMpe_0(0), negMmaxMpe_0(0), negResM_0(0),
+    posUp_0(0), posUpc_0(0), posUu_0(0), posFy_0(0), posFcapFy_0(0), posResF_0(0),
+    negUp_0(0), negUpc_0(0), negUu_0(0), negFy_0(0), negFcapFy_0(0), negResF_0(0),
     LAMBDA_S(0), LAMBDA_C(0), LAMBDA_K(0), c_S(0), c_C(0), c_K(0), D_pos(0), D_neg(0)
 {
     this->revertToStart();
@@ -114,15 +114,15 @@ int IMKBilin::setTrialStrain(double	strain, double	strainRate)
     this->revertToLastCommit();
 
     //state determination algorithm: defines the current force and tangent stiffness
-    U	    = strain; //set trial displacement
-    Ui_1	= Ui;
-    Fi_1	= Fi;
-    Di_1	= Di;
-    Ui	    = U;
+    U       = strain; //set trial displacement
+    Ui_1    = Ui;
+    Fi_1    = Fi;
+    // Di_1    = Di;
+    Ui      = U;
 
     double dU   = Ui - Ui_1;
     double dEi;
-    if (dU==0) {
+    if (dU == 0) {
         Fi  = Fi_1;
         dEi = 0;
     }
@@ -136,35 +136,34 @@ int IMKBilin::setTrialStrain(double	strain, double	strainRate)
     // %%%%%%%% INITIALIZE CURRENT BACKBONE VALUES AS PREVIOUS %%%%%%%%%%%%
     // %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-    double	posMmax	    = posMmax_1;
-    double	posMpe	    = posMpe_1;
-    double	posMpeProj	= posMpeProj_1;
-    double	posMmaxProj	= posMmaxProj_1;
-    double	posKp	    = posKp_1;
+    double	posFcap     = posFcap_1;
+    double	posFy	    = posFy_1;
+    double	posFyProj	= posFyProj_1;
+    double	posFcapProj = posFcapProj_1;
+    double	posKp       = posKp_1;
     double	posKpc	    = posKpc_1;
-    double	posUy	    = posUy_1;
-    double	posUmax	    = posUmax_1;
+    double	posUy       = posUy_1;
+    double	posUcap     = posUcap_1;
 
-    double	negMmax	    = negMmax_1;
-    double	negMpe	    = negMpe_1;
-    double	negMpeProj	= negMpeProj_1;
-    double	negMmaxProj	= negMmaxProj_1;
-    double	negKp	    = negKp_1;
+    double	negFcap     = negFcap_1;
+    double	negFy	    = negFy_1;
+    double	negFyProj	= negFyProj_1;
+    double	negFcapProj = negFcapProj_1;
+    double	negKp       = negKp_1;
     double	negKpc	    = negKpc_1;
-    double	negUy	    = negUy_1;
-    double	negUmax	    = negUmax_1;
+    double	negUy       = negUy_1;
+    double	negUcap     = negUcap_1;
 
-    double	Mi_boundary	= 0.0;
+    double	Mi_boundary = 0.0;
 
-    double	QuarterFlag, Rintrsct_K, DISP_Rev;
-    double	betaS, betaC, betaK;
-    double	K_j;
-    double	Ki, Kpi, Kpci, Umaxi, MpeProji, MmaxProji;
+    int	    QuarterFlag = 0, Di;
+    double  betaS=0, betaC=0, betaK=0;
+    double  Rintrsct_K, DISP_Rev;
+    double	Ki, Kpi, Kpci, Ucapi, FyProji, FcapProji;
 
     double	Mi_temp;
 
-    QuarterFlag	    = 0;
-    Reversal_Flag	= 0;
+    Reversal_Flag   = false;
 
         ///////////////////////////////////////////////////////////////////////////////////////////
         ///////////////////////////////////////////////////////////////////////////////////////////
@@ -191,7 +190,8 @@ int IMKBilin::setTrialStrain(double	strain, double	strainRate)
     //      Reversal_Flag:  Not preserved.  When unloading starts. Evokes re-condiersing of the stiffness deterioration and peak point registration.
 
     // Find the direction of the current increment "Di": 1:if Ui is moving right    and -1: if Ui is moving left
-    if (Ui >= Ui_1) {
+    // 方向を判定する
+    if (Ui > Ui_1) {
         Di	= 1;
     }
     else {
@@ -199,42 +199,29 @@ int IMKBilin::setTrialStrain(double	strain, double	strainRate)
     }
 
     //  Simple Notation for current step parameters
-    Fi	= Fi_1 + K_j_1 * dU;
-
-    //  Check for Fail Flag
-    if ((Ui >= posUu_0)) {
-        Fail_FlagPos	= 1;
-    }
-    if ((Ui <= -negUu_0)) {
-        Fail_FlagNeg	= 1;
-    }
+    Fi	= Fi_1 + K_j * dU;
 
     //  Get Information before first Yield
-    if (((Fi >= posMpe_0) || (Fi <= -negMpe_0)) && (Yield_Flag == 0)) {
-        Yield_Flag	= 1;
-    }
-
+    // CHECK FOR YIELDING
     //  Check if previous point was a reversal point
-    if (Di_1 / Di < 0) {
-        Reversal_Flag	= 1;
+    // CHECK FOR REVERSAL
+    if (Di_1 * Di < 0) {
+        Reversal_Flag   = true;
         Ulocal	= Ui_1;
         Flocal	= Fi_1;
     }
 
     // Update loading / unloading stiffness at load reversals
-    if (Reversal_Flag == 1) {
-        Rintrsct_K  = Ulocal - Flocal / K_j_1;
-        DISP_Rev    = engTotl - engExcr_1 - 0.5*Flocal *(Rintrsct_K - Ulocal);
+    // UPDATE PEAK POINTS and DETERIORATIONS PARAMETERS
+    if (Reversal_Flag) {
+        Rintrsct_K  = Ulocal - Flocal / K_j;      // 除荷終了点
+        DISP_Rev    = engTotl - engExcr_1 - 0.5*Flocal *(Rintrsct_K - Ulocal);  // 割引吸収エネルギー
         betaK       = pow((DISP_Rev / (2 * refEnergyK - engTotl + 0.5*Flocal * (Rintrsct_K - Ulocal))), c_K);
 
-        K_j	        = K_j_1 * (1 - betaK);
-        if ((Mrpos_Flag == 1) || (Mrneg_Flag == 1)) {
-            K_j	    = 0.5*Ke;
+        K_j         = K_j * (1 - betaK);
+        if (Mrpos_Flag || Mrneg_Flag) {
+            K_j     = 0.5*Ke;
         }
-    }
-    else {
-        betaK	= betaK_1;
-        K_j	        = K_j_1;
     }
 
         ///////////////////////////////////////////////////////////////////////////////////////////
@@ -247,87 +234,114 @@ int IMKBilin::setTrialStrain(double	strain, double	strainRate)
         // Update Positive Backbone and Target Peak Point
 
     //  Calculate Backbone parameters at current excursion based on Energy Dissipated in the previous Excursion
-    if (Excursion_Flag == 1.0) {
-        betaS	= pow((engExcr / (refEnergyS - engTotl)), c_S);
-        betaC	= pow((engExcr / (refEnergyC - engTotl)), c_C);
+    if (Excursion_Flag) {
+        betaS   = pow((engExcr / (refEnergyS - engTotl)), c_S);
+        betaC   = pow((engExcr / (refEnergyC - engTotl)), c_C);
 
         if (Ui > Ui_1) {
-            //  Update Mpe, Mmax Projion, Kp, and Kpc for Current Step
-            posMpe	    = posMpe_1	    * (1.0 - betaS * D_pos);
-            posKp	    = posKp_1	    * (1.0 - betaS * D_pos);
-            posMmaxProj	= posMmaxProj_1	* (1.0 - betaC * D_pos);
-            if (posMr_0 == 0.0) {
-                posKpc	= posKpc_0 * (posMmaxProj - posMr_0) / posMmaxProj;
+            //  Update My, Mmax Projion, Kp, and Kpc for Current Step
+            posFy       = posFy_1       * (1.0 - betaS * D_pos);
+            posKp       = posKp_1       * (1.0 - betaS * D_pos);
+            posFcapProj = posFcapProj_1 * (1.0 - betaC * D_pos);
+            if (posFr_0 == 0.0) {
+                posKpc  = posKpc_0 * (posFcapProj - posFr_0) / posFcapProj;
             }
             else {
-                posKpc	= posKpc_0 * (posMpe - posMr_0) / (posMpe_0 - posMr_0);
+                posKpc  = posKpc_0 * (posFy - posFr_0) / (posFy_0 - posFr_0);
             }
 
             //  Calculate Rotation at Capping Point (Intersection of the two Slopes)
-            posUy	        = posMpe / K_j;
-            posMpeProj	    = posMpe - posKp * posUy;
-            posUmax	        = fabs((posMmaxProj - posMpeProj) / (posKpc + posKp));
-            posMmax	        = posMpeProj + posUmax * posKp;
+            posUy           = posFy / K_j;
+            posFyProj       = posFy - posKp * posUy;
+            posUcap         = fabs((posFcapProj - posFyProj) / (posKpc + posKp));
+            posFcap         = posFyProj + posUcap * posKp;
 
-            if ((posMmax - posMr_0) / (posUmax + fabs(Ui)- posMr_0/K_j) < posKp) {
-                posKp	    = (posMmax - posMr_0) / (posUmax + fabs(Ui) - posMr_0 / K_j);
-                posMpeProj	= posMpe - posKp * posUy;
-                posUmax	    = fabs((posMmaxProj - posMpeProj) / (posKpc + posKp));
-                posMmax	    = posMpeProj + posUmax * posKp;
+            if ((posFcap - posFr_0) / (posUcap + fabs(Ui)- posFr_0/K_j) < posKp) {
+                posKp       = (posFcap - posFr_0) / (posUcap + fabs(Ui) - posFr_0 / K_j);
+                posFyProj   = posFy - posKp * posUy;
+                posUcap     = fabs((posFcapProj - posFyProj) / (posKpc + posKp));
+                posFcap     = posFyProj + posUcap * posKp;
             }
         }
         else {
-            //  Update Mpe, Mmax Projion, Kp, and Kpc for Current Step
-            negMpe	    = negMpe_1 * (1.0 - betaS * D_neg);
-            negMmaxProj	= negMmaxProj_1 * (1.0 - betaC * D_neg);
+            //  Update My, Mmax Projion, Kp, and Kpc for Current Step
+            negFy	    = negFy_1 * (1.0 - betaS * D_neg);
+            negFcapProj	= negFcapProj_1 * (1.0 - betaC * D_neg);
             negKp	= negKp_1 * (1.0 - betaS * D_neg);
-            if (negMr_0 == 0.0) {
-                negKpc	= negKpc_0 * (negMmaxProj - negMr_0) / negMmaxProj;
+            if (negFr_0 == 0.0) {
+                negKpc	= negKpc_0 * (negFcapProj - negFr_0) / negFcapProj;
             }
             else {
-                negKpc	= negKpc_0 * (negMpe - negMr_0) / (negMpe_0 - negMr_0);
+                negKpc	= negKpc_0 * (negFy - negFr_0) / (negFy_0 - negFr_0);
             }
 
             //  Calculate Rotation at Capping Point (Intersection of the two Slopes)
-            negUy       = negMpe / K_j;
-            negMpeProj  = negMpe - negKp * negUy;
-            negUmax     = fabs((negMmaxProj - negMpeProj) / (negKpc + negKp));
-            negMmax     = negMpeProj + negUmax * negKp;
+            negUy       = negFy / K_j;
+            negFyProj  = negFy - negKp * negUy;
+            negUcap     = fabs((negFcapProj - negFyProj) / (negKpc + negKp));
+            negFcap     = negFyProj + negUcap * negKp;
 
-            if ((negMmax - negMr_0) / (negUmax + fabs(Ui) - negMr_0 / K_j) < negKp) {
-                negKp       = (negMmax - negMr_0) / (negUmax + fabs(Ui) - negMr_0 / K_j);
-                negMpeProj  = negMpe - negKp * negUy;
-                negUmax     = fabs((negMmaxProj - negMpeProj) / (negKpc + negKp));
-                negMmax     = negMpeProj + negUmax * negKp;
+            if ((negFcap - negFr_0) / (negUcap + fabs(Ui) - negFr_0 / K_j) < negKp) {
+                negKp       = (negFcap - negFr_0) / (negUcap + fabs(Ui) - negFr_0 / K_j);
+                negFyProj  = negFy - negKp * negUy;
+                negUcap     = fabs((negFcapProj - negFyProj) / (negKpc + negKp));
+                negFcap     = negFyProj + negUcap * negKp;
             }
         }
-
+    }
+    // If the residual moment is reached in a given direction, Override the values of Mmax, Ucap, Kp and Kpc
+    // Residual Curveに入れる
+    if (Di == 1) {
+        if (posFcap < posFr_0) {
+            posFcap = posFr_0;
+            posKpc  = pow(10., -6);
+            posKp   = pow(10., -6);
+            posUcap = pow(10., -6);
+        }
+        posUy_1         = posUy;
+        posUcap_1       = posUcap;
+        posKp_1         = posKp;
+        posKpc_1        = posKpc;
+        posFy_1         = posFy;
+        posFyProj_1     = posFyProj;
+        posFcap_1       = posFcap;
+        posFcapProj_1   = posFcapProj;
     }
     else {
-
-        betaS   = betaS_1;
-        betaC   = betaC_1;
-
-        if (Di >= 0.0) {
-            posMpe      = posMpe_1;
-            posMpeProj  = posMpeProj_1;
-            posMmaxProj = posMmaxProj_1;
-            posMmax     = posMmax_1;
-            posKp       = posKp_1;
-            posKpc      = posKpc_1;
-            posUy       = posUy_1;
-            posUmax     = posUmax_1;
+        if (negFcap < negFr_0) {
+            negFcap = negFr_0;
+            negKpc  = pow(10., -6);
+            negKp   = pow(10., -6);
+            negUcap = pow(10., -6);
         }
-        else {
-            negMpe      = negMpe_1;
-            negMpeProj  = negMpeProj_1;
-            negMmaxProj = negMmaxProj_1;
-            negMmax     = negMmax_1;
-            negKp       = negKp_1;
-            negKpc      = negKpc_1;
-            negUy       = negUy_1;
-            negUmax     = negUmax_1;
-        }
+        negUy_1         = negUy;
+        negUcap_1       = negUcap;
+        negKp_1         = negKp;
+        negKpc_1        = negKpc;
+        negFy_1         = negFy;
+        negFyProj_1     = negFyProj;
+        negFcap_1       = negFcap;
+        negFcapProj_1   = negFcapProj;
+    }
+
+    // %%%%%%%%%% PREPARE RETURN VALUES %%%%%%%%%%%%%
+    //  Simple and unified notation for current bacbone parameters
+    // x軸を越えたら更新する
+    if (Fi_1 + K_j * dU > 0.0) {
+        Ki          = K_j;
+        Kpi         = posKp;
+        Kpci        = posKpc;
+        Ucapi       = posUcap;
+        FyProji     = posFyProj;
+        FcapProji   = posFcapProj;
+    }
+    else {
+        Ki          = K_j;
+        Kpi         = negKp;
+        Kpci        = negKpc;
+        Ucapi       = negUcap;
+        FyProji     = negFyProj;
+        FcapProji   = negFcapProj;
     }
 
         ///////////////////////////////////////////////////////////////////////////////////////////
@@ -338,232 +352,198 @@ int IMKBilin::setTrialStrain(double	strain, double	strainRate)
         ///////////////////////////////////////////////////////////////////////////////////////////
         ///////////////////////////////////////////////////////////////////////////////////////////
 
-    // If the residual moment is reached in a given direction, Override the values of Mmax, Umax, Kp and Kpc
-    if (Di > 0.0) {
-        if (posMmax < posMr_0) {
-            posMmax = posMr_0;
-            posKpc  = pow(10., -6);
-            posKp   = pow(10., -6);
-            posUmax = pow(10., -6);
-        }
-    }
-    else {
-        if (negMmax < negMr_0) {
-            negMmax = negMr_0;
-            negKpc  = pow(10., -6);
-            negKp   = pow(10., -6);
-            negUmax = pow(10., -6);
-        }
-    }
-
-    //  Simple and unified notation for current bacbone parameters
-    if (Fi_1 + K_j * dU > 0.0) {
-        Ki          = K_j;
-        Kpi         = posKp;
-        Kpci        = posKpc;
-        Umaxi       = posUmax;
-        MpeProji    = posMpeProj;
-        MmaxProji   = posMmaxProj;
-    }
-    else {
-        Ki          = K_j;
-        Kpi         = negKp;
-        Kpci        = negKpc;
-        Umaxi       = negUmax;
-        MpeProji    = negMpeProj;
-        MmaxProji   = negMmaxProj;
-    }
-
-
     //  Moment Calculation Based on unloading/reloading stiffeness
     Fi              = Fi_1 + Ki * dU;
+// Capを越えたかどうかの判定
 
     //  Location Flags
-    if ((Ui >= 0.0) && (Fi >= 0.0)) {
-        QuarterFlag = 1;
+    if (Ui > 0){
+        if (Fi > 0){
+            QuarterFlag = 1;
+        }
+        else{
+            QuarterFlag = 2;
+        }
     }
-    else if ((Ui >= 0.0) && (Fi < 0.0)) {
-        QuarterFlag = 2;
+    else{
+        if (Fi > 0){
+            QuarterFlag = 4;
+        }
+        else{
+            QuarterFlag = 3;
+        }
     }
-    else if ((Ui <= 0.0) && (Fi < 0.0)) {
-        QuarterFlag = 3;
-    }
-    else if ((Ui <= 0.0) && (Fi > 0.0)) {
-        QuarterFlag = 4;
-    }
+
+    // if (Ui > 0){
+    //     if (Ui < Ucapi){
+    //         Mi_boundary = FyProji + Kpi*Ui;
+    //     }else{
+    //         Mi_boundary = FcapProji - Kpci*Ui;
+    //     }
+    //     if (Mi_boundary < posFr_0){
+    //         Mi_boundary = posFr_0;
+    //         Mrpos_Flag  = 1;
+    //     }
+    // }else{
+    //     if (Ui > -Ucapi){
+    //         Mi_boundary = -FyProji + Kpi*Ui;
+    //     }else{
+    //         Mi_boundary = -FcapProji - Kpci*Ui;
+    //     }
+    //     if (Mi_boundary > -negFr_0){
+    //         Mi_boundary = -negFr_0;
+    //         Mrneg_Flag  = 1;
+    //     }
+    // }
+
 
     // Get Boundary Moment at Current Step Based on Current BackBone Curve
-    if (QuarterFlag == 1) {
-        if (fabs(Ui) <= Umaxi) {
-            Mi_boundary = MpeProji + Kpi * Ui;
+    if (QuarterFlag == 1) {         // Ui > 0
+        if (fabs(Ui) < Ucapi) {
+            Mi_boundary =               FyProji     + Kpi * Ui;
         }
-        else if (fabs(Ui) > Umaxi) {
-            Mi_boundary = max(posMr_0, MmaxProji - Kpci * Ui);
+        else{
+            Mi_boundary = max(posFr_0,  FcapProji   - Kpci * Ui);
         }
-        if (Mi_boundary <= posMr_0) {
-            Mrpos_Flag  = 1;
+        if (Mi_boundary < posFr_0) {
+            Mrpos_Flag  = true;
         }
     }
-    else if (QuarterFlag == 3) {
-        if (fabs(Ui) <= Umaxi) {
-            Mi_boundary = -MpeProji + Kpi * Ui;
-            //cout << "        MpeProji=" << MpeProji << " Kpi=" << Kpi << " Mbound=" << Mi_boundary << endln;
+    else if (QuarterFlag == 3) {    // Ui < 0
+        if (fabs(Ui) < Ucapi) {
+            Mi_boundary = -FyProji + Kpi * Ui;
+            //cout << "        FyProji=" << FyProji << " Kpi=" << Kpi << " Mbound=" << Mi_boundary << endln;
 
         }
-        else if (fabs(Ui) > Umaxi) {
-            Mi_boundary = min(-negMr_0, -MmaxProji - Kpci * Ui);
+        else if (fabs(Ui) > Ucapi) {
+            Mi_boundary = min(-negFr_0, -FcapProji - Kpci * Ui);
         }
-        if (Mi_boundary >= -negMr_0) {
-            Mrneg_Flag  = 1;
+        if (Mi_boundary > -negFr_0) {
+            Mrneg_Flag  = true;
         }
     }
     else if (QuarterFlag == 2) {
-        Mi_boundary     = min(-negMr_0, -MpeProji + Kpi * fabs(Ui));
-        if (Mi_boundary == -negMr_0 && TangentK==1.e-6) {
-            Mrneg_Flag  = 1;
+        Mi_boundary     = min(-negFr_0, -FyProji + Kpi * fabs(Ui));
+        if (Mi_boundary == -negFr_0 && TangentK==1.e-6) {
+            Mrneg_Flag  = true;
         }
     }
     else if (QuarterFlag == 4) {
-        Mi_boundary     = max(posMr_0, MpeProji - Kpi * fabs(Ui));
-        if (Mi_boundary == posMr_0 && TangentK == 1.e-6) {
-            Mrneg_Flag  = 1;
+        Mi_boundary     = max(posFr_0, FyProji - Kpi * fabs(Ui));
+        if (Mi_boundary == posFr_0 && TangentK == 1.e-6) {
+            Mrneg_Flag  = true;
         }
     }
 
     //cout << "                Fi_1=" << Fi_1 << " Fi=" << Fi << " TangentK=" << TangentK << " Mbound=" << Mi_boundary << " Q=" << QuarterFlag << endln;
 
-    // If Failure took place in a given direction (Fail_Flag_dir=1), Set the Boundary Moment in the opposite direction to Mr
-    if ((Ui <= 0.0) && (Di > 0.0) && (Fail_FlagNeg == 1)) {
-        Mi_boundary     = posMr_0;
+    //  Check for Fail Flag
+    // 限界変形を超えた時
+    if ((Ui > posUu_0)) {
+        Fail_FlagPos    = true;
     }
-    else if ((Ui >= 0.0) && (Di < 0.0) && (Fail_FlagPos == 1)) {
-        Mi_boundary     = -negMr_0;
+    if ((Ui < -negUu_0)) {
+        Fail_FlagNeg    = true;
+    }
+
+    // If Failure took place in a given direction (Fail_Flag_dir=1), Set the Boundary Moment in the opposite direction to Mr
+    if ((Ui < 0) && (Di == 1) && (Fail_FlagNeg)) {
+        Mi_boundary     = posFr_0;
+    }
+    else if ((Ui > 0) && (Di == -1) && (Fail_FlagPos)) {
+        Mi_boundary     = -negFr_0;
     }
 
 
     // %%%%%%% Current Step Moment Calculation %%%%%%%
     // If current moment based on unloading/reloading Ki is larger than the boundary moment, set it equal to the boundary moment
-    if (QuarterFlag == 1 && Di >= 0.0 && Fi >= Mi_boundary) {
+    if (QuarterFlag == 1 && Di == 1 && Fi > Mi_boundary) {
         Fi  = Mi_boundary;
     }
-    else if (QuarterFlag == 3 && Di <= 0.0 && Fi <= Mi_boundary) {
+    else if (QuarterFlag == 3 && Di == -1 && Fi < Mi_boundary) {
         Fi  = Mi_boundary;
     }
-    else if (QuarterFlag == 2 && Fi <= Mi_boundary) {
+    else if (QuarterFlag == 2 && Fi < Mi_boundary) {
         Fi  = Mi_boundary;
     }
-    else if (QuarterFlag == 4 && Fi >= Mi_boundary) {
+    else if (QuarterFlag == 4 && Fi > Mi_boundary) {
         Fi  = Mi_boundary;
     }
-
-    if ((Mrneg_Flag == 1) || (Mrpos_Flag == 1)) {
-        if (QuarterFlag == 1 && Di > 0 && Fi_1 == posMr_0)  {
-            Fi  = posMr_0;
+// Residual Curveの判定
+    if (Mrneg_Flag || Mrpos_Flag) {
+        if (QuarterFlag == 1 && Di == 1 && Fi_1 == posFr_0)  {
+            Fi  = posFr_0;
         }
-        if  (QuarterFlag == 3 && Di < 0 && Fi_1 == -negMr_0) {
-            Fi  = -negMr_0;
+        if  (QuarterFlag == 3 && Di == -1 && Fi_1 == -negFr_0) {
+            Fi  = -negFr_0;
         }
     }
-
     // if fail flag is reached in any loading direction, set current moment equal to zero
-    if ((Fail_FlagPos == 1.0) || (Fail_FlagNeg == 1.0) || (Energy_Flag == 1)) {
+    if ( Fail_FlagPos || Fail_FlagNeg || Energy_Flag ) {
         Fi  = 0.0;
     }
-
-    if (Yield_Flag != 1) {
-        if (Ui >= posUy_0) {
-            Fi  = posMpe_0 + posKp_0 * (Ui - posUy_0);
+// Yieldの判定
+    if (!Yield_Flag) {
+        if (Ui > posUy_0) {
+            Fi  = posFy_0 + posKp_0 * (Ui - posUy_0);
+            Yield_Flag  = true;
         }
-        else {
-            Fi  = Ke * (Ui);
-        }
+        // else {
+        //     Fi  = Ke * (Ui);
+        // }
 
-        if (Ui <= -negUy_0) {
-            Fi  = -negMpe_0 - negKp_0 * fabs(Ui - negUy_0);
+        else if (Ui < -negUy_0) {
+            Fi  = -negFy_0 - negKp_0 * fabs(Ui - negUy_0);
         }
         else {
             Fi  = Ke * (Ui);
         }
     }
-
+// エネルギーを計算して、耐力低下の判定
     //cout << "                Fi_1=" << Fi_1 << " Fi=" << Fi << " TangentK=" << TangentK << " Mbound=" << Mi_boundary << " Q=" << QuarterFlag << endln;
 
     // %%%%%%%%%%%%% Energy Calculation %%%%%%%%%%%%%
-    dEi         = (Fi + Fi_1) * 0.5 * dU;
-    engTotl   += dEi; //  total energy dissipated till current incremental step
+    dEi     = (Fi + Fi_1) * 0.5 * dU;
+    engTotl += dEi; //  total energy dissipated till current incremental step
 
     // Energy calculation at each new excursion
-    if (Fi / Fi_1 <= 0.0) {
-        engExcr       = engTotl - engExcr_1;  // total energy dissipated in current excursion
+    if (Fi * Fi_1 <= 0.0) {
+        engExcr       = max(0.,engTotl - engExcr_1);  // total energy dissipated in current excursion
         engExcr_1     = engTotl;                // total energy dissipated in previous excursion
-        Excursion_Flag  = 1;
+        Excursion_Flag  = true;
     }
     else {
-        Excursion_Flag  = 0.0;
+        Excursion_Flag  = false;
     }
 
     // Check if the Component inherit Reference Energy is Consumed
-    if (Excursion_Flag == 1) {
-        if ((engTotl >= refEnergyS) || (engTotl >= refEnergyC)) {
-            Energy_Flag = 1;
-        }
-        if ((betaS > 1) || (betaC > 1)) {
-            Energy_Flag = 1;
+    if (Excursion_Flag) {
+        if ( engTotl > refEnergyS || engTotl > refEnergyC || betaS > 1 || betaC > 1 ) {
+            Energy_Flag = true;
         }
     }
-    else if (Reversal_Flag == 1) {
-        if (engTotl >= refEnergyK) {
-            Energy_Flag = 1;
-        }
-        if (betaK > 1) {
-            Energy_Flag = 1;
+    else if (Reversal_Flag) {
+        if ( engTotl > refEnergyK || betaK > 1 ) {
+            Energy_Flag = true;
         }
     }
-
-    // %%%%%%%%%% PREPARE RETURN VALUES %%%%%%%%%%%%%
-
-    if (Ui >= Ui_1) {
-        posUy_1         = posUy;
-        posUmax_1       = posUmax;
-        posKp_1         = posKp;
-        posKpc_1        = posKpc;
-        posMpe_1        = posMpe;
-        posMpeProj_1    = posMpeProj;
-        posMmax_1       = posMmax;
-        posMmaxProj_1   = posMmaxProj;
-    }
-    else {
-        negUy_1         = negUy;
-        negUmax_1       = negUmax;
-        negKp_1         = negKp;
-        negKpc_1        = negKpc;
-        negMpe_1        = negMpe;
-        negMpeProj_1    = negMpeProj;
-        negMmax_1       = negMmax;
-        negMmaxProj_1   = negMmaxProj;
-    }
-
-    K_j_1	    = K_j;
-    betaS_1	= betaS;
-    betaC_1	= betaC;
-    betaK_1	= betaK;
 
     // Tangent Stiffeness Calculation
-    if (Fi == posMr_0 || Fi == -negMr_0) {
-        TangentK	= pow(10., -6);
+    if (Fi == posFr_0 || Fi == -negFr_0) {
+        TangentK    = pow(10., -6);
     }
 
     if (Ui == Ui_1) {
-        TangentK	= Ke;
-        Fi	= Fi_1;
+        TangentK    = Ke;
+        Fi          = Fi_1;
     }
     else {
-        TangentK	= (Fi - Fi_1) / dU;
+        TangentK    = (Fi - Fi_1) / dU;
         if (TangentK == 0) {
-            TangentK	= pow(10., -6);
+            TangentK    = pow(10., -6);
         }
     }
-
+    Di_1    = Di;
     //cout << "                Fi_1=" << Fi_1 << " Fi=" << Fi << " Ke=" << Ke << " TangentK=" << TangentK << " Mbound=" << Mi_boundary << endln;
 
     // %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -573,25 +553,25 @@ int IMKBilin::setTrialStrain(double	strain, double	strainRate)
     return 0;
 }
 
-double	IMKBilin::getStress(void)
+double IMKBilin::getStress(void)
 {
     //cout << " getStress" << endln;
     return (Fi);
 }
 
-double	IMKBilin::getTangent(void)
+double IMKBilin::getTangent(void)
 {
     //cout << " getTangent" << endln;
     return (TangentK);
 }
 
-double	IMKBilin::getInitialTangent(void)
+double IMKBilin::getInitialTangent(void)
 {
     //cout << " getInitialTangent" << endln;
     return (Ke);
 }
 
-double	IMKBilin::getStrain(void)
+double IMKBilin::getStrain(void)
 {
     //cout << " getStrain" << endln;
     return (U);
@@ -603,41 +583,41 @@ int IMKBilin::commitState(void)
 
     //commit trial  variables
 
-    cU	            = U;
+    cU              = U;
 
-    cUi	            = Ui;
-    cFi	            = Fi;
-    cDi	            = Di;
-    cUi_1	        = Ui_1;
-    cFi_1	        = Fi_1;
-    cDi_1	        = Di_1;
+    cUi             = Ui;
+    cFi             = Fi;
+    // cDi             = Di;
+    cUi_1           = Ui_1;
+    cFi_1           = Fi_1;
+    cDi_1           = Di_1;
 
-    cUlocal	        = Ulocal;
-    cFlocal	        = Flocal;
-    cTangentK	    = TangentK;
+    cUlocal         = Ulocal;
+    cFlocal         = Flocal;
+    cTangentK       = TangentK;
 
-    cK_j_1	        = K_j_1;
-    cPosUy_1	    = posUy_1;
-    cPosUmax_1	    = posUmax_1;
-    cPosKp_1	    = posKp_1;
-    cPosKpc_1	    = posKpc_1;
-    cPosMpe_1	    = posMpe_1;
-    cPosMpeProj_1	= posMpeProj_1;
-    cPosMmax_1	    = posMmax_1;
-    cPosMmaxProj_1	= posMmaxProj_1;
+    cK_j          = K_j;
+    cPosUy_1        = posUy_1;
+    cPosUcap_1      = posUcap_1;
+    cPosKp_1        = posKp_1;
+    cPosKpc_1       = posKpc_1;
+    cPosMy_1        = posFy_1;
+    cPosMyProj_1    = posFyProj_1;
+    cPosMmax_1      = posFcap_1;
+    cPosMmaxProj_1  = posFcapProj_1;
 
     cNegUy_1	    = negUy_1;
-    cNegUmax_1	    = negUmax_1;
+    cNegUcap_1	    = negUcap_1;
     cNegKp_1	= negKp_1;
     cNegKpc_1	= negKpc_1;
-    cNegMpe_1	    = negMpe_1;
-    cNegMpeProj_1	= negMpeProj_1;
-    cNegMmax_1	    = negMmax_1;
-    cNegMmaxProj_1	= negMmaxProj_1;
+    cNegMy_1	    = negFy_1;
+    cNegMyProj_1	= negFyProj_1;
+    cNegMmax_1	    = negFcap_1;
+    cNegMmaxProj_1	= negFcapProj_1;
 
-    cBetaS_1	    = betaS_1;
-    cBetaC_1	    = betaC_1;
-    cBetaK_1	    = betaK_1;
+    // cBetaS	    = betaS;
+    // cBetaC	    = betaC;
+    // cBetaK	    = betaK;
 
     cExcursion_Flag	= Excursion_Flag;
     cReversal_Flag	= Reversal_Flag;
@@ -665,7 +645,7 @@ int IMKBilin::revertToLastCommit(void)
 
     Ui	            = cUi;
     Fi	            = cFi;
-    Di	            = cDi;
+    // Di	            = cDi;
     Ui_1	        = cUi_1;
     Fi_1	        = cFi_1;
     Di_1	        = cDi_1;
@@ -674,28 +654,28 @@ int IMKBilin::revertToLastCommit(void)
     Flocal	    = cFlocal;
     TangentK	    = cTangentK;
 
-    K_j_1	        = cK_j_1;
+    K_j	        = cK_j;
     posUy_1	        = cPosUy_1;
-    posUmax_1	    = cPosUmax_1;
+    posUcap_1	    = cPosUcap_1;
     posKp_1	= cPosKp_1;
     posKpc_1	= cPosKpc_1;
-    posMpe_1	    = cPosMpe_1;
-    posMpeProj_1	= cPosMpeProj_1;
-    posMmax_1	    = cPosMmax_1;
-    posMmaxProj_1	= cPosMmaxProj_1;
+    posFy_1	    = cPosMy_1;
+    posFyProj_1	= cPosMyProj_1;
+    posFcap_1	    = cPosMmax_1;
+    posFcapProj_1	= cPosMmaxProj_1;
 
     negUy_1	        = cNegUy_1;
-    negUmax_1	    = cNegUmax_1;
+    negUcap_1	    = cNegUcap_1;
     negKp_1	= cNegKp_1;
     negKpc_1	= cNegKpc_1;
-    negMpe_1	    = cNegMpe_1;
-    negMpeProj_1	= cNegMpeProj_1;
-    negMmax_1	    = cNegMmax_1;
-    negMmaxProj_1	= cNegMmaxProj_1;
+    negFy_1	    = cNegMy_1;
+    negFyProj_1	= cNegMyProj_1;
+    negFcap_1	    = cNegMmax_1;
+    negFcapProj_1	= cNegMmaxProj_1;
 
-    betaS_1	    = cBetaS_1;
-    betaC_1	    = cBetaC_1;
-    betaK_1	    = cBetaK_1;
+    // betaS	    = cBetaS;
+    // betaC	    = cBetaC;
+    // betaK	    = cBetaK;
 
     Excursion_Flag	= cExcursion_Flag;
     Reversal_Flag	= cReversal_Flag;
@@ -720,63 +700,63 @@ int IMKBilin::revertToStart(void)
     //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% ONE TIME CALCULATIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%\\
     //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%*/
 
-    if (posResM_0 == 0.0) {
-        posResM_0	= 0.01;
+    if (posResF_0 == 0.0) {
+        posResF_0	= 0.01;
     }
-    if (negResM_0 == 0.0) {
-        negResM_0	= 0.01;
+    if (negResF_0 == 0.0) {
+        negResF_0	= 0.01;
     }
 
-    posUy_0	                            = posMpe_0 / Ke;
-    posUmax_0	                        = posUy_0 + posUp_0;
-    posKp_0	                    = (posMmax_0 - posMpe_0) / (posUp_0);
-    posKpc_0	                    = posMmax_0 / (posUpc_0);
-    // posMpe_0	                        = posMpe_0;
-    posMmax_0	                        = posMmaxMpe_0 * posMpe_0;
-    posMpeProj_0	                    = posMmax_0 - posKp_0  * posUmax_0;
-    posMmaxProj_0	                    = posMmax_0 + posKpc_0 * posUmax_0;
+    posUy_0	                            = posFy_0 / Ke;
+    posUcap_0	                        = posUy_0 + posUp_0;
+    posKp_0	                    = (posFcap_0 - posFy_0) / (posUp_0);
+    posKpc_0	                    = posFcap_0 / (posUpc_0);
+    // posFy_0	                        = posFy_0;
+    posFcap_0	                        = posFcapFy_0 * posFy_0;
+    posFyProj_0	                    = posFcap_0 - posKp_0  * posUcap_0;
+    posFcapProj_0	                    = posFcap_0 + posKpc_0 * posUcap_0;
 
-    negUy_0	                            = negMpe_0 / Ke;
-    negUmax_0	                        = negUy_0 + negUp_0;
-    negKp_0	                    = (negMmax_0 - negMpe_0) / (negUp_0);
-    negKpc_0	                    = negMmax_0 / (negUpc_0);
-    // negMpe_0	                        = negMpe_0;
-    negMmax_0	                        = negMmaxMpe_0 * negMpe_0;
-    negMpeProj_0	                    = negMmax_0 - negKp_0  * negUmax_0;
-    negMmaxProj_0	                    = negMmax_0 + negKpc_0 * negUmax_0;
+    negUy_0	                            = negFy_0 / Ke;
+    negUcap_0	                        = negUy_0 + negUp_0;
+    negKp_0	                    = (negFcap_0 - negFy_0) / (negUp_0);
+    negKpc_0	                    = negFcap_0 / (negUpc_0);
+    // negFy_0	                        = negFy_0;
+    negFcap_0	                        = negFcapFy_0 * negFy_0;
+    negFyProj_0	                    = negFcap_0 - negKp_0  * negUcap_0;
+    negFcapProj_0	                    = negFcap_0 + negKpc_0 * negUcap_0;
 
-    posMr_0	                            = posResM_0*posMpe_0;
-    negMr_0	                            = negResM_0*negMpe_0;
+    posFr_0	                            = posResF_0*posFy_0;
+    negFr_0	                            = negResF_0*negFy_0;
 
-    refEnergyS	                    = LAMBDA_S*posMpe_0;
-    refEnergyC	                    = LAMBDA_C*posMpe_0;
-    refEnergyK	                    = LAMBDA_K*posMpe_0;
+    refEnergyS	                    = LAMBDA_S*posFy_0;
+    refEnergyC	                    = LAMBDA_C*posFy_0;
+    refEnergyK	                    = LAMBDA_K*posFy_0;
 
-    K_j_1	        = cK_j_1	        = Ke;
-    posUy_1	        = cPosUy_1	        = posMpe_0 / Ke;
-    posUmax_1	    = cPosUmax_1	    = posUy_0 + posUp_0;
-    posKp_1	= cPosKp_1	    = (posMmax_0 - posMpe_0) / (posUp_0);
-    posKpc_1	= cPosKpc_1	= posMmax_0 / (posUpc_0);
-    posMpe_1	    = cPosMpe_1	        = posMpe_0;
-    posMmax_1	    = cPosMmax_1	    = posMmaxMpe_0*posMpe_0;
-    posMpeProj_1	= cPosMpeProj_1	    = posMmax_1 - posKp_1 *posUmax_1;
-    posMmaxProj_1	= cPosMmaxProj_1	= posMmax_1 + posKpc_1*posUmax_1;
+    K_j	        = cK_j	        = Ke;
+    posUy_1	        = cPosUy_1	        = posFy_0 / Ke;
+    posUcap_1	    = cPosUcap_1	    = posUy_0 + posUp_0;
+    posKp_1	= cPosKp_1	    = (posFcap_0 - posFy_0) / (posUp_0);
+    posKpc_1	= cPosKpc_1	= posFcap_0 / (posUpc_0);
+    posFy_1	    = cPosMy_1	        = posFy_0;
+    posFcap_1	    = cPosMmax_1	    = posFcapFy_0*posFy_0;
+    posFyProj_1	= cPosMyProj_1	    = posFcap_1 - posKp_1 *posUcap_1;
+    posFcapProj_1	= cPosMmaxProj_1	= posFcap_1 + posKpc_1*posUcap_1;
 
-    negUy_1	        = cNegUy_1	        = negMpe_0 / Ke;
-    negUmax_1	    = cNegUmax_1	    = negUy_0 + negUp_0;
-    negKp_1	= cNegKp_1	    = (negMmax_0 - negMpe_0) / (negUp_0);
-    negKpc_1	= cNegKpc_1	= negMmax_0 / (negUpc_0);
-    negMpe_1	    = cNegMpe_1	        = negMpe_0;
-    negMmax_1	    = cNegMmax_1	    = negMmaxMpe_0*negMpe_0;
-    negMpeProj_1	= cNegMpeProj_1	    = negMmax_1 - negKp_1 *negUmax_1;
-    negMmaxProj_1	= cNegMmaxProj_1	= negMmax_1 + negKpc_1*negUmax_1;
+    negUy_1	        = cNegUy_1	        = negFy_0 / Ke;
+    negUcap_1	    = cNegUcap_1	    = negUy_0 + negUp_0;
+    negKp_1	= cNegKp_1	    = (negFcap_0 - negFy_0) / (negUp_0);
+    negKpc_1	= cNegKpc_1	= negFcap_0 / (negUpc_0);
+    negFy_1	    = cNegMy_1	        = negFy_0;
+    negFcap_1	    = cNegMmax_1	    = negFcapFy_0*negFy_0;
+    negFyProj_1	= cNegMyProj_1	    = negFcap_1 - negKp_1 *negUcap_1;
+    negFcapProj_1	= cNegMmaxProj_1	= negFcap_1 + negKpc_1*negUcap_1;
 
     //initially I zero everything   
     U	            = cU	            = 0;
 
     Ui	            = cUi	            = 0;
     Fi	            = cFi	            = 0;
-    Di	            = cDi	            = 0;
+    // Di	            = cDi	            = 0;
     Ui_1	        = cUi_1	            = 0;
     Fi_1	        = cFi_1	            = 0;
     Di_1	        = cDi_1	            = 0;
@@ -785,18 +765,18 @@ int IMKBilin::revertToStart(void)
     Ulocal	    = cUlocal	    = 0;
     Flocal	    = cFlocal	    = 0;
 
-    betaS_1	        = cBetaS_1	        = 0;
-    betaC_1	        = cBetaC_1	        = 0;
-    betaK_1	        = cBetaK_1	        = 0;
+    // betaS	        = cBetaS	        = 0;
+    // betaC	        = cBetaC	        = 0;
+    // betaK	        = cBetaK	        = 0;
 
-    Excursion_Flag	= cExcursion_Flag	= 0;
-    Reversal_Flag	= cReversal_Flag	= 0;
-    Yield_Flag	    = cYield_Flag	    = 0;
-    Fail_FlagPos	= cFail_FlagPos	    = 0;
-    Fail_FlagNeg	= cFail_FlagNeg	    = 0;
-    Mrpos_Flag	    = cMrpos_Flag	    = 0;
-    Mrneg_Flag	    = cMrneg_Flag	    = 0;
-    Energy_Flag	    = cEnergy_Flag	    = 0;
+    Excursion_Flag	= cExcursion_Flag	= false;
+    Reversal_Flag	= cReversal_Flag	= false;
+    Yield_Flag	    = cYield_Flag	    = false;
+    Fail_FlagPos	= cFail_FlagPos	    = false;
+    Fail_FlagNeg	= cFail_FlagNeg	    = false;
+    Mrpos_Flag	    = cMrpos_Flag	    = false;
+    Mrneg_Flag	    = cMrneg_Flag	    = false;
+    Energy_Flag	    = cEnergy_Flag	    = false;
 
     engExcr_1	    = cEngExcr_1	    = 0;
     engExcr	    = cEngExcr	    = 0;
@@ -810,21 +790,21 @@ UniaxialMaterial *
 IMKBilin::getCopy(void)
 {
     IMKBilin *theCopy	= new IMKBilin(this->getTag(), Ke,
-        posUp_0, posUpc_0, posUu_0, posMpe_0, posMmaxMpe_0, posResM_0,
-        negUp_0, negUpc_0, negUu_0, negMpe_0, negMmaxMpe_0, negResM_0,
+        posUp_0, posUpc_0, posUu_0, posFy_0, posFcapFy_0, posResF_0,
+        negUp_0, negUpc_0, negUu_0, negFy_0, negFcapFy_0, negResF_0,
         LAMBDA_S, LAMBDA_C, LAMBDA_K, c_S, c_C, c_K, D_pos, D_neg);
 
     //cout << " getCopy" << endln;
 
-    theCopy->posMr_0	        = posMr_0;
-    theCopy->negMr_0	        = negMr_0;
+    theCopy->posFr_0	        = posFr_0;
+    theCopy->negFr_0	        = negFr_0;
 
     theCopy->U	                = U;
     theCopy->cU	                = cU;
 
     theCopy->Ui	                = Ui;
     theCopy->Fi	                = Fi;
-    theCopy->Di	                = Di;
+    // theCopy->Di	                = Di;
     theCopy->Ui_1	            = Ui_1;
     theCopy->Fi_1	            = Fi_1;
     theCopy->Di_1	            = Di_1;
@@ -833,28 +813,28 @@ IMKBilin::getCopy(void)
     theCopy->Flocal	        = Flocal;
     theCopy->TangentK	        = TangentK;
 
-    theCopy->K_j_1	            = K_j_1;
+    theCopy->K_j	            = K_j;
     theCopy->posUy_1	        = posUy_1;
-    theCopy->posUmax_1	        = posUmax_1;
+    theCopy->posUcap_1	        = posUcap_1;
     theCopy->posKp_1	    = posKp_1;
     theCopy->posKpc_1	    = posKpc_1;
-    theCopy->posMpe_1	        = posMpe_1;
-    theCopy->posMpeProj_1	    = posMpeProj_1;
-    theCopy->posMmax_1	        = posMmax_1;
-    theCopy->posMmaxProj_1	    = posMmaxProj_1;
+    theCopy->posFy_1	        = posFy_1;
+    theCopy->posFyProj_1	    = posFyProj_1;
+    theCopy->posFcap_1	        = posFcap_1;
+    theCopy->posFcapProj_1	    = posFcapProj_1;
 
     theCopy->negUy_1	        = negUy_1;
-    theCopy->negUmax_1	        = negUmax_1;
+    theCopy->negUcap_1	        = negUcap_1;
     theCopy->negKp_1	    = negKp_1;
     theCopy->negKpc_1	    = negKpc_1;
-    theCopy->negMpe_1	        = negMpe_1;
-    theCopy->negMpeProj_1	    = negMpeProj_1;
-    theCopy->negMmax_1	        = negMmax_1;
-    theCopy->negMmaxProj_1	    = negMmaxProj_1;
+    theCopy->negFy_1	        = negFy_1;
+    theCopy->negFyProj_1	    = negFyProj_1;
+    theCopy->negFcap_1	        = negFcap_1;
+    theCopy->negFcapProj_1	    = negFcapProj_1;
 
-    theCopy->betaS_1	        = betaS_1;
-    theCopy->betaC_1	        = betaC_1;
-    theCopy->betaK_1	        = betaK_1;
+    // theCopy->betaS	        = betaS;
+    // theCopy->betaC	        = betaC;
+    // theCopy->betaK	        = betaK;
 
     theCopy->Excursion_Flag	    = Excursion_Flag;
     theCopy->Reversal_Flag	    = Reversal_Flag;
@@ -871,12 +851,12 @@ IMKBilin::getCopy(void)
     theCopy->engTotl	        = engTotl;
 
 
-    theCopy->cPosMr_0	        = cPosMr_0;
-    theCopy->cNegMr_0	        = cNegMr_0;
+    theCopy->cPosFr_0	        = cPosFr_0;
+    theCopy->cNegFr_0	        = cNegFr_0;
 
     theCopy->cUi	            = cUi;
     theCopy->cFi	            = cFi;
-    theCopy->cDi	            = cDi;
+    // theCopy->cDi	            = cDi;
     theCopy->cUi_1	            = cUi_1;
     theCopy->cFi_1	            = cFi_1;
     theCopy->cDi_1	            = cDi_1;
@@ -885,28 +865,28 @@ IMKBilin::getCopy(void)
     theCopy->cFlocal	        = cFlocal;
     theCopy->cTangentK	        = cTangentK;
 
-    theCopy->cK_j_1	            = cK_j_1;
+    theCopy->cK_j	            = cK_j;
     theCopy->cPosUy_1	        = cPosUy_1;
-    theCopy->cPosUmax_1	        = cPosUmax_1;
+    theCopy->cPosUcap_1	        = cPosUcap_1;
     theCopy->cPosKp_1	    = cPosKp_1;
     theCopy->cPosKpc_1	    = cPosKpc_1;
-    theCopy->cPosMpe_1	        = cPosMpe_1;
-    theCopy->cPosMpeProj_1	    = cPosMpeProj_1;
+    theCopy->cPosMy_1	        = cPosMy_1;
+    theCopy->cPosMyProj_1	    = cPosMyProj_1;
     theCopy->cPosMmax_1	        = cPosMmax_1;
     theCopy->cPosMmaxProj_1	    = cPosMmaxProj_1;
 
     theCopy->cNegUy_1	        = cNegUy_1;
-    theCopy->cNegUmax_1	        = cNegUmax_1;
+    theCopy->cNegUcap_1	        = cNegUcap_1;
     theCopy->cNegKp_1	    = cNegKp_1;
     theCopy->cNegKpc_1	    = cNegKpc_1;
-    theCopy->cNegMpe_1	        = cNegMpe_1;
-    theCopy->cNegMpeProj_1	    = cNegMpeProj_1;
+    theCopy->cNegMy_1	        = cNegMy_1;
+    theCopy->cNegMyProj_1	    = cNegMyProj_1;
     theCopy->cNegMmax_1	        = cNegMmax_1;
     theCopy->cNegMmaxProj_1	    = cNegMmaxProj_1;
 
-    theCopy->cBetaS_1	        = cBetaS_1;
-    theCopy->cBetaC_1	        = cBetaC_1;
-    theCopy->cBetaK_1	        = cBetaK_1;
+    // theCopy->cBetaS	        = cBetaS;
+    // theCopy->cBetaC	        = cBetaC;
+    // theCopy->cBetaK	        = cBetaK;
 
     theCopy->cExcursion_Flag	= cExcursion_Flag;
     theCopy->cReversal_Flag	    = cReversal_Flag;
@@ -936,15 +916,15 @@ int IMKBilin::sendSelf(int cTag, Channel &theChannel)
     data(2)	    = posUp_0;
     data(3)	    = posUpc_0;
     data(4)	    = posUu_0;
-    data(5)	    = posMpe_0;
-    data(6)	    = posMmaxMpe_0;
-    data(7)	    = posResM_0;
+    data(5)	    = posFy_0;
+    data(6)	    = posFcapFy_0;
+    data(7)	    = posResF_0;
     data(8)	    = negUp_0;
     data(9)	    = negUpc_0;
     data(10)	= negUu_0;
-    data(11)	= negMpe_0;
-    data(12)	= negMmaxMpe_0;
-    data(13)	= negResM_0;
+    data(11)	= negFy_0;
+    data(12)	= negFcapFy_0;
+    data(13)	= negResF_0;
     data(14)	= LAMBDA_S;
     data(15)	= LAMBDA_C;
     data(16)	= LAMBDA_K;
@@ -956,7 +936,7 @@ int IMKBilin::sendSelf(int cTag, Channel &theChannel)
 
     data(22)	= Ui;
     data(23)	= Fi;
-    data(24)	= Di;
+    // data(24)	= Di;
     data(25)	= Ui_1;
     data(26)	= Fi_1;
     data(27)	= Di_1;
@@ -964,28 +944,28 @@ int IMKBilin::sendSelf(int cTag, Channel &theChannel)
     data(29)	= Flocal;
     data(30)	= TangentK;
 
-    data(31)	= K_j_1;
+    data(31)	= K_j;
     data(32)	= posUy_1;
-    data(33)	= posUmax_1;
+    data(33)	= posUcap_1;
     data(34)	= posKp_1;
     data(35)	= posKpc_1;
-    data(36)	= posMpe_1;
-    data(37)	= posMpeProj_1;
-    data(38)	= posMmax_1;
-    data(39)	= posMmaxProj_1;
+    data(36)	= posFy_1;
+    data(37)	= posFyProj_1;
+    data(38)	= posFcap_1;
+    data(39)	= posFcapProj_1;
 
     data(40)	= negUy_1;
-    data(41)	= negUmax_1;
+    data(41)	= negUcap_1;
     data(42)	= negKp_1;
     data(43)	= negKpc_1;
-    data(44)	= negMpe_1;
-    data(45)	= negMpeProj_1;
-    data(46)	= negMmax_1;
-    data(47)	= negMmaxProj_1;
+    data(44)	= negFy_1;
+    data(45)	= negFyProj_1;
+    data(46)	= negFcap_1;
+    data(47)	= negFcapProj_1;
 
-    data(48)	= betaS_1;
-    data(49)	= betaC_1;
-    data(50)	= betaK_1;
+    // data(48)	= betaS;
+    // data(49)	= betaC;
+    // data(50)	= betaK;
 
     data(51)	= refEnergyS;
     data(52)	= refEnergyC;
@@ -1007,7 +987,7 @@ int IMKBilin::sendSelf(int cTag, Channel &theChannel)
 
     data(66)	= cUi;
     data(67)	= cFi;
-    data(68)	= cDi;
+    // data(68)	= cDi;
     data(69)	= cUi_1;
     data(70)	= cFi_1;
     data(71)	= cDi_1;
@@ -1015,28 +995,28 @@ int IMKBilin::sendSelf(int cTag, Channel &theChannel)
     data(73)	= cFlocal;
     data(74)	= cTangentK;
 
-    data(75)	= cK_j_1;
+    data(75)	= cK_j;
     data(76)	= cPosUy_1;
-    data(77)	= cPosUmax_1;
+    data(77)	= cPosUcap_1;
     data(78)	= cPosKp_1;
     data(79)	= cPosKpc_1;
-    data(80)	= cPosMpe_1;
-    data(81)	= cPosMpeProj_1;
+    data(80)	= cPosMy_1;
+    data(81)	= cPosMyProj_1;
     data(82)	= cPosMmax_1;
     data(83)	= cPosMmaxProj_1;
 
     data(84)	= cNegUy_1;
-    data(85)	= cNegUmax_1;
+    data(85)	= cNegUcap_1;
     data(86)	= cNegKp_1;
     data(87)	= cNegKpc_1;
-    data(88)	= cNegMpe_1;
-    data(89)	= cNegMpeProj_1;
+    data(88)	= cNegMy_1;
+    data(89)	= cNegMyProj_1;
     data(90)	= cNegMmax_1;
     data(91)	= cNegMmaxProj_1;
 
-    data(92)	= cBetaS_1;
-    data(93)	= cBetaC_1;
-    data(94)	= cBetaK_1;
+    // data(92)	= cBetaS;
+    // data(93)	= cBetaC;
+    // data(94)	= cBetaK;
 
     data(95)	= cExcursion_Flag;
     data(96)	= cReversal_Flag;
@@ -1052,10 +1032,10 @@ int IMKBilin::sendSelf(int cTag, Channel &theChannel)
     data(105)	= cEngRvrs;
     data(106)	= cEngTotl;
 
-    data(107)	= posMr_0;
-    data(108)	= negMr_0;
-    data(109)	= cPosMr_0;
-    data(110)	= cNegMr_0;
+    data(107)	= posFr_0;
+    data(108)	= negFr_0;
+    data(109)	= cPosFr_0;
+    data(110)	= cNegFr_0;
 
     data(111)	= U;
     data(112)	= cU;
@@ -1084,15 +1064,15 @@ int IMKBilin::recvSelf(int cTag, Channel &theChannel, FEM_ObjectBroker &theBroke
         posUp_0	        = data(2);
         posUpc_0	    = data(3);
         posUu_0	        = data(4);
-        posMpe_0	    = data(5);
-        posMmaxMpe_0	= data(6);
-        posResM_0	    = data(7);
+        posFy_0	    = data(5);
+        posFcapFy_0	= data(6);
+        posResF_0	    = data(7);
         negUp_0	        = data(8);
         negUpc_0	    = data(9);
         negUu_0	        = data(10);
-        negMpe_0	    = data(11);
-        negMmaxMpe_0	= data(12);
-        negResM_0	    = data(13);
+        negFy_0	    = data(11);
+        negFcapFy_0	= data(12);
+        negResF_0	    = data(13);
         LAMBDA_S	    = data(14);
         LAMBDA_C	    = data(15);
         LAMBDA_K	    = data(16);
@@ -1104,7 +1084,7 @@ int IMKBilin::recvSelf(int cTag, Channel &theChannel, FEM_ObjectBroker &theBroke
 
         Ui	            = data(22);
         Fi	            = data(23);
-        Di	            = data(24);
+        // Di	            = data(24);
         Ui_1	        = data(25);
         Fi_1	        = data(26);
         Di_1	        = data(27);
@@ -1112,28 +1092,28 @@ int IMKBilin::recvSelf(int cTag, Channel &theChannel, FEM_ObjectBroker &theBroke
         Flocal	    = data(29);
         TangentK	    = data(30);
 
-        K_j_1	        = data(31);
+        K_j	        = data(31);
         posUy_1	        = data(32);
-        posUmax_1	    = data(33);
+        posUcap_1	    = data(33);
         posKp_1	= data(34);
         posKpc_1	= data(35);
-        posMpe_1	    = data(36);
-        posMpeProj_1	= data(37);
-        posMmax_1	    = data(38);
-        posMmaxProj_1	= data(39);
+        posFy_1	    = data(36);
+        posFyProj_1	= data(37);
+        posFcap_1	    = data(38);
+        posFcapProj_1	= data(39);
 
         negUy_1	        = data(40);
-        negUmax_1	    = data(41);
+        negUcap_1	    = data(41);
         negKp_1	= data(42);
         negKpc_1	= data(43);
-        negMpe_1	    = data(44);
-        negMpeProj_1	= data(45);
-        negMmax_1	    = data(46);
-        negMmaxProj_1	= data(47);
+        negFy_1	    = data(44);
+        negFyProj_1	= data(45);
+        negFcap_1	    = data(46);
+        negFcapProj_1	= data(47);
 
-        betaS_1	        = data(48);
-        betaC_1	        = data(49);
-        betaK_1	        = data(50);
+        // betaS	        = data(48);
+        // betaC	        = data(49);
+        // betaK	        = data(50);
 
         refEnergyS	= data(51);
         refEnergyC	= data(52);
@@ -1155,7 +1135,7 @@ int IMKBilin::recvSelf(int cTag, Channel &theChannel, FEM_ObjectBroker &theBroke
 
         cUi	            = data(66);
         cFi	            = data(67);
-        cDi	            = data(68);
+        // cDi	            = data(68);
         cUi_1	        = data(69);
         cFi_1	        = data(70);
         cDi_1	        = data(71);
@@ -1164,28 +1144,28 @@ int IMKBilin::recvSelf(int cTag, Channel &theChannel, FEM_ObjectBroker &theBroke
         cFlocal	    = data(73);
         cTangentK	    = data(74);
 
-        cK_j_1	        = data(75);
+        cK_j	        = data(75);
         cPosUy_1	    = data(76);
-        cPosUmax_1	    = data(77);
+        cPosUcap_1	    = data(77);
         cPosKp_1	= data(78);
         cPosKpc_1	= data(79);
-        cPosMpe_1	    = data(80);
-        cPosMpeProj_1	= data(81);
+        cPosMy_1	    = data(80);
+        cPosMyProj_1	= data(81);
         cPosMmax_1	    = data(82);
         cPosMmaxProj_1	= data(83);
 
         cNegUy_1	    = data(84);
-        cNegUmax_1	    = data(85);
+        cNegUcap_1	    = data(85);
         cNegKp_1	= data(86);
         cNegKpc_1	= data(87);
-        cNegMpe_1	    = data(88);
-        cNegMpeProj_1	= data(89);
+        cNegMy_1	    = data(88);
+        cNegMyProj_1	= data(89);
         cNegMmax_1	    = data(90);
         cNegMmaxProj_1	= data(91);
 
-        cBetaS_1	    = data(92);
-        cBetaC_1	    = data(93);
-        cBetaK_1	    = data(94);
+        // cBetaS	    = data(92);
+        // cBetaC	    = data(93);
+        // cBetaK	    = data(94);
 
         cExcursion_Flag	= data(95);
         cReversal_Flag	= data(96);
@@ -1201,10 +1181,10 @@ int IMKBilin::recvSelf(int cTag, Channel &theChannel, FEM_ObjectBroker &theBroke
         cEngRvrs	    = data(105);
         cEngTotl	    = data(106);
 
-        posMr_0	        = data(107);
-        negMr_0	        = data(108);
-        cPosMr_0	    = data(109);
-        cNegMr_0	    = data(110);
+        posFr_0	        = data(107);
+        negFr_0	        = data(108);
+        cPosFr_0	    = data(109);
+        cNegFr_0	    = data(110);
 
         U	            = data(111);
         cU	            = data(112);

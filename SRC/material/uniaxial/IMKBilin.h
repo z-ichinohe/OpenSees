@@ -3,13 +3,13 @@
 **          Pacific Earthquake Engineering Research Center            **
 **                                                                    **
 **                                                                    **
-** (C) Copyright 1999,	The Regents of the University of California    **
+** (C) Copyright 1999, The Regents of the University of California    **
 ** All Rights Reserved.                                               **
 **                                                                    **
 ** Commercial use of this program without express permission of the   **
-** University of California,	Berkeley,	is strictly prohibited.  See   **
+** University of California, Berkeley, is strictly prohibited.  See   **
 ** file 'COPYRIGHT'  in main directory for information on usage and   **
-** redistribution,	 and for a DISCLAIMER OF ALL WARRANTIES.           **
+** redistribution, and for a DISCLAIMER OF ALL WARRANTIES.           **
 **                                                                    **
 ** Developed by:                                                      **
 **   Frank McKenna (fmckenna@ce.berkeley.edu)                         **
@@ -34,133 +34,126 @@
 class IMKBilin : public UniaxialMaterial
 {
 public:
-	IMKBilin(int tag,	double	Ke,
-		double	posUp_0,	double	posUpc_0,	double	posUu_0,	double	posMpe_0,	double	posMmaxMpe_0,	double	posResM_0,
-		double	negUp_0,	double	negUpc_0,	double	negUu_0,	double	negMpe_0,	double	negMmaxMpe_0,	double	negResM_0,
-		double	LAMBDA_S,	double	LAMBDA_C,	double	LAMBDA_K,	double	c_S,	double	c_C,	double	c_K,	double	D_pos,	double	D_neg);
-	IMKBilin();
-	~IMKBilin();
-	const char *getClassType(void) const { return "IMKBilin"; };
-	int setTrialStrain(double	strain,	double	strainRate = 0.0);
-	double	getStrain(void);
-	double	getStress(void);
-	double	getTangent(void);
-	double	getInitialTangent(void);
-	int commitState(void);
-	int revertToLastCommit(void);
-	int revertToStart(void);
-	UniaxialMaterial *getCopy(void);
-	int sendSelf(int commitTag,	Channel &theChannel);
-	int recvSelf(int commitTag,	Channel &theChannel,	FEM_ObjectBroker &theBroker);
-	void Print(OPS_Stream &s,	int flag = 0);
+    IMKBilin(int tag, double Ke,
+        double posUp_0,  double posUpc_0, double posUu_0,  double posFy_0, double posFcapFy_0, double posResF_0,
+        double negUp_0,  double negUpc_0, double negUu_0,  double negFy_0, double negFcapFy_0, double negResF_0,
+        double LAMBDA_S, double LAMBDA_C, double LAMBDA_K, double c_S, double c_C, double c_K, double D_pos, double D_neg);
+    IMKBilin();
+    ~IMKBilin();
+    const char *getClassType(void) const { return "IMKBilin"; };
+    int setTrialStrain(double strain, double strainRate = 0.0);
+    double  getStrain(void);
+    double  getStress(void);
+    double  getTangent(void);
+    double  getInitialTangent(void);
+    int commitState(void);
+    int revertToLastCommit(void);
+    int revertToStart(void);
+    UniaxialMaterial *getCopy(void);
+    int sendSelf(int commitTag, Channel &theChannel);
+    int recvSelf(int commitTag, Channel &theChannel, FEM_ObjectBroker &theBroker);
+    void Print(OPS_Stream &s, int flag = 0);
 
 
 protected:
 
 private:
-	//my functions
+    //my functions
 
+    //Fixed input material parameters 
+    double  Ke;
+    double  posUp_0;
+    double  posUpc_0;
+    double  posUu_0;
+    double  posFy_0;
+    double  posFcapFy_0;
+    double  posResF_0;
+    double  negUp_0;
+    double  negUpc_0;
+    double  negUu_0;
+    double  negFy_0;
+    double  negFcapFy_0;
+    double  negResF_0;
+    double  LAMBDA_S;
+    double  LAMBDA_C;
+    double  LAMBDA_K;
+    double  c_S;
+    double  c_C;
+    double  c_K;
+    double  D_pos;
+    double  D_neg;
 
-	//Fixed input material parameters 
-	double	Ke;
-	double	posUp_0;
-	double	posUpc_0;
-	double	posUu_0;
-	double	posMpe_0;
-	double	posMmaxMpe_0;
-	double	posResM_0;
-	double	negUp_0;
-	double	negUpc_0;
-	double	negUu_0;
-	double	negMpe_0;
-	double	negMmaxMpe_0;
-	double	negResM_0;
-	double	LAMBDA_S;
-	double	LAMBDA_C;
-	double	LAMBDA_K;
-	double	c_S;
-	double	c_C;
-	double	c_K;
-	double	D_pos;
-	double	D_neg;
+    //State variables 
+    double  U,              cU;
 
-	//State variables 
-	double	U,	cU;
+    //History variables
+    // U and F
+    double  posUy_0,        negUy_0;
+    double  posUcap_0,      negUcap_0;
+    double  posFcap_0,      negFcap_0;
+    double  posKp_0,        negKp_0;
+    double  posKpc_0,       negKpc_0;
+    double  posFr_0,        cPosFr_0;
+    double  negFr_0,        cNegFr_0;
+    double  posFyProj_0,    negFyProj_0;
+    double  posFcapProj_0,  negFcapProj_0;
 
-	//History variables 
-	double	posMr_0,		cPosMr_0;
-	double	negMr_0,		cNegMr_0;
-	double	posUy_0;
-	double	posUmax_0;
-	double	posKp_0;
-	double	posKpc_0;
-	double	posMmax_0;
-	double	posMpeProj_0;
-	double	posMmaxProj_0;
+    double  posUy_1,        cPosUy_1;
+    double  posUcap_1,      cPosUcap_1;
+    double  posFy_1,        cPosMy_1;
+    double  posFcap_1,      cPosMmax_1;
+    double  posFyProj_1,    cPosMyProj_1;
+    double  posFcapProj_1,  cPosMmaxProj_1;
+    double  posKp_1,        cPosKp_1;
+    double  posKpc_1,       cPosKpc_1;
 
-	double	negUy_0;
-	double	negUmax_0;
-	double	negKp_0;
-	double	negKpc_0;
-	double	negMmax_0;
-	double	negMpeProj_0;
-	double	negMmaxProj_0;
+    double  negUy_1,		cNegUy_1;
+    double  negUcap_1,		cNegUcap_1;
+    double  negFy_1,		cNegMy_1;
+    double  negFcap_1,		cNegMmax_1;
+    double  negFyProj_1,	cNegMyProj_1;
+    double  negFcapProj_1,	cNegMmaxProj_1;
+    double  negKp_1,		cNegKp_1;
+    double  negKpc_1,		cNegKpc_1;
+    // Basic
+    double  Ui,				cUi;
+    double  Fi,				cFi;
+    double  Ui_1,			cUi_1;
+    double  Fi_1,			cFi_1;
+    // int     Di,				cDi;
+    int     Di_1,			cDi_1;
+    // Energy
 
-	double	refEnergyS;
-	double	refEnergyC;
-	double	refEnergyK;
+    // double  betaS,		cBetaS;
+    // double  betaC,		cBetaC;
+    // double  betaK,		cBetaK;
 
-	double	K_j_1,			cK_j_1;
-	double	posUy_1,		cPosUy_1;
-	double	posUmax_1,		cPosUmax_1;
-	double	posKp_1,		cPosKp_1;
-	double	posKpc_1,		cPosKpc_1;
-	double	posMpe_1,		cPosMpe_1;
-	double	posMpeProj_1,	cPosMpeProj_1;
-	double	posMmax_1,		cPosMmax_1;
-	double	posMmaxProj_1,	cPosMmaxProj_1;
+    double  refEnergyS;
+    double  refEnergyC;
+    double  refEnergyK;
 
-	double	negUy_1,		cNegUy_1;
-	double	negUmax_1,		cNegUmax_1;
-	double	negKp_1,		cNegKp_1;
-	double	negKpc_1,		cNegKpc_1;
-	double	negMpe_1,		cNegMpe_1;
-	double	negMpeProj_1,	cNegMpeProj_1;
-	double	negMmax_1,		cNegMmax_1;
-	double	negMmaxProj_1,	cNegMmaxProj_1;
-
-	double	Ui,				cUi;
-	double	Fi,				cFi;
-	double	Di,				cDi;
-	double	Ui_1,			cUi_1;
-	double	Fi_1,			cFi_1;
-	double	Di_1,			cDi_1;
-
-	double	betaS_1,		cBetaS_1;
-	double	betaC_1,		cBetaC_1;
-	double	betaK_1,		cBetaK_1;
-
-	double	Excursion_Flag,	cExcursion_Flag;
-	double	Reversal_Flag,	cReversal_Flag;
-	double	Yield_Flag,		cYield_Flag;
-	double	Fail_FlagPos,	cFail_FlagPos;
-	double	Fail_FlagNeg,	cFail_FlagNeg;
-	double	Mrpos_Flag,		cMrpos_Flag;
-	double	Mrneg_Flag,		cMrneg_Flag;
-	double	Energy_Flag,	cEnergy_Flag;
-
-	double	engExcr_1,		cEngExcr_1;
-	double	engExcr,		cEngExcr;
-	double	engRvrs,		cEngRvrs;
-	double	engTotl,		cEngTotl;
-
-	double	Ulocal,		cUlocal;
-	double	Flocal,		cFlocal;
-	double	TangentK,		cTangentK;
-
+    double  engExcr_1,		cEngExcr_1;
+    double  engExcr,		cEngExcr;
+    double  engRvrs,		cEngRvrs;
+    double  engTotl,		cEngTotl;
+    // Stiffness
+    double  TangentK,       cTangentK;
+    double  K_j,          cK_j;
+    // Flag
+    bool    Excursion_Flag, cExcursion_Flag;
+    bool    Reversal_Flag,  cReversal_Flag;
+    bool    Yield_Flag,     cYield_Flag;
+    bool    Fail_FlagPos,   cFail_FlagPos;
+    bool    Fail_FlagNeg,   cFail_FlagNeg;
+    bool    Mrpos_Flag,     cMrpos_Flag;
+    bool    Mrneg_Flag,     cMrneg_Flag;
+    bool    Energy_Flag,    cEnergy_Flag;
+    // Local
+    double  Ulocal,         cUlocal;
+    double  Flocal,	        cFlocal;
+    // Other
 
 };
-
 
 #endif
 
@@ -170,15 +163,15 @@ Ke 					Initial elastic stiffness
 posUp_0 		Initial pre-capping plastic rotation in the +ve loading direction
 posUpc_0   	Initial post-capping plastic rotation in the +ve loading direction
 posUu_0 		Ultimate rotation in the +ve loading direction
-posMpe_0 			Initial effective plastic moment in the +ve loading direction
-posMmaxMpe_0 		Initial maximum-to-effective plastic moment ratio in the +ve loading direction
-posResM_0 			Residual moment in the +ve loading direction
+posFy_0 			Initial effective plastic moment in the +ve loading direction
+posFcapFy_0 		Initial maximum-to-effective plastic moment ratio in the +ve loading direction
+posResF_0 			Residual moment in the +ve loading direction
 negUp_0 		Initial pre-capping plastic rotation in the -ve loading direction
 negUpc_0   	Initial post-capping plastic rotation in the -ve loading direction
 negUu_0    	Ultimate rotation in the -ve loading direction
-negMpe_0        	Initial effective plastic moment in the -ve loading direction
-negMmaxMpe_0    	Initial maximum-to-effective plastic moment ratio in the -ve loading direction
-negResM_0       	Residual moment in the -ve loading direction
+negFy_0        	Initial effective plastic moment in the -ve loading direction
+negFcapFy_0    	Initial maximum-to-effective plastic moment ratio in the -ve loading direction
+negResF_0       	Residual moment in the -ve loading direction
 LAMBDA_S 			Cyclic deterioration parameter for strength deterioration 
 LAMBDA_C 			Cyclic deterioration parameter for post-capping strength deterioration
 LAMBDA_K 			Cyclic deterioration parameter for unloading stiffness deterioration 
@@ -200,27 +193,27 @@ Di_1            	Rotation Direction at previous step
 Ulocal 			Rotation at direction reversal points
 Flocal 			Moment at direction reversal points
 TangentK 			Tangent stiffness
-K_j_1 				Unloading stiffness in the previous excursion
+K_j 				Unloading stiffness in the previous excursion
 posUy_1 	Yielding rotation in the previous +ve excursion
-posUmax_1 	Capping point rotation in the previous +ve excursion
+posUcap_1 	Capping point rotation in the previous +ve excursion
 posKp_1 	Pre-capping slope in the previous +ve excursion
 posKpc_1 	Post-capping slope in the previous +ve excursion
-posMpe_1 		Effective plastic moment in the previous +ve excursion
-posMpeProj_1  Projed effective plastic moment in the previous +ve excursion
-posMmax_1        Maximum moment in the previous +ve excursion
-posMmaxProj_1 Projed maximum  moment in the previous +ve excursion
+posFy_1 		Effective plastic moment in the previous +ve excursion
+posFyProj_1  Projed effective plastic moment in the previous +ve excursion
+posFcap_1        Maximum moment in the previous +ve excursion
+posFcapProj_1 Projed maximum  moment in the previous +ve excursion
 negUy_1     Yielding rotation in the previous -ve excursion
-negUmax_1   Capping point rotation in the previous -ve excursion
+negUcap_1   Capping point rotation in the previous -ve excursion
 negKp_1     Pre-capping slope in the previous -ve excursion
 negKpc_1    Post-capping slope in the previous -ve excursion
-negMpe_1         Effective plastic moment in the previous -ve excursion
-negMpeProj_1  Projed effective plastic moment in the previous -ve 
-negMmax_1        Maximum moment in the previous -ve excursion
-negMmaxProj_1 Projed maximum  moment in the previous -ve excursion
-betaS_1    
-betaC_1    
-betaK_1    
-betaF_1 	  
+negFy_1         Effective plastic moment in the previous -ve excursion
+negFyProj_1  Projed effective plastic moment in the previous -ve 
+negFcap_1        Maximum moment in the previous -ve excursion
+negFcapProj_1 Projed maximum  moment in the previous -ve excursion
+betaS    
+betaC    
+betaK    
+betaF 	  
 refEnergyS    	Refernence energy for strength deterioration
 refEnergyC    	Refernence energy for post-capping strength deterioration
 refEnergyK    	Refernence energy for unloading stiffness deterioration

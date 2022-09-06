@@ -34,7 +34,7 @@
 #include <string>
 using namespace std;
 
-static int numIMKPeakOrientedMaterials	= 0;
+static int numIMKPeakOrientedMaterials = 0;
 
 void *
 OPS_IMKPeakOriented()
@@ -45,11 +45,11 @@ OPS_IMKPeakOriented()
     }
 
     // Pointer to a uniaxial material that will be returned
-    UniaxialMaterial *theMaterial	= 0;
+    UniaxialMaterial *theMaterial = 0;
 
     int    iData[1];
     double dData[23];
-    int numData	= 1;
+    int numData = 1;
 
     if (OPS_GetIntInput(&numData, iData) != 0) {
         opserr << "WARNING invalid uniaxialMaterial IMKPeakOriented tag" << endln;
@@ -61,8 +61,8 @@ OPS_IMKPeakOriented()
 
     if (OPS_GetDoubleInput(&numData, dData) != 0) {
         opserr << "Invalid Args want: uniaxialMaterial IMKPeakOriented tag? Ke? ";
-        opserr << "Up_pos? Upc_pos? Uu_pos? Fy_pos? FcapFy_pos? ResF_pos? ";
-        opserr << "Up_neg? Upc_neg? Uu_neg? Fy_neg? FcapFy_neg? ResF_neg? ";
+        opserr << "posUp_0? posUpc_0? posUu_0? posFy_0? posFcapFy_0? posResF_0? ";
+        opserr << "negUp_0? negUpc_0? negUu_0? negFy_0? negFcapFy_0? negResF_0? ";
         opserr << "LamdaS? LamdaC? LamdaA? LamdaK? Cs? Cc? Ca? Ck? D_pos? D_neg? ";
         return 0;
     }
@@ -70,7 +70,7 @@ OPS_IMKPeakOriented()
 
 
     // Parsing was successful, allocate the material
-    theMaterial	= new IMKPeakOriented(iData[0],
+    theMaterial = new IMKPeakOriented(iData[0],
         dData[0],
         dData[1], dData[2], dData[3], dData[4], dData[5], dData[6],
         dData[7], dData[8], dData[9], dData[10], dData[11], dData[12],
@@ -86,12 +86,12 @@ OPS_IMKPeakOriented()
 }
 
 IMKPeakOriented::IMKPeakOriented(int tag, double p_Ke,
-    double p_Up_pos, double p_Upc_pos, double p_Uu_pos, double p_Fy_pos, double p_FcapFy_pos, double p_ResF_pos,
-    double p_Up_neg, double p_Upc_neg, double p_Uu_neg, double p_Fy_neg, double p_FcapFy_neg, double p_ResF_neg,
+    double p_posUp_0, double p_posUpc_0, double p_posUu_0, double p_posFy_0, double p_posFcapFy_0, double p_posResF_0,
+    double p_negUp_0, double p_negUpc_0, double p_negUu_0, double p_negFy_0, double p_negFcapFy_0, double p_negResF_0,
     double p_LAMBDA_S, double p_LAMBDA_C, double p_LAMBDA_A, double p_LAMBDA_K, double p_c_S, double p_c_C, double p_c_A, double p_c_K, double p_D_pos, double p_D_neg)
     : UniaxialMaterial(tag, 0), Ke(p_Ke),
-    Up_pos(p_Up_pos), Upc_pos(p_Upc_pos), Uu_pos(p_Uu_pos), Fy_pos(p_Fy_pos), FcapFy_pos(p_FcapFy_pos), ResF_pos(p_ResF_pos),
-    Up_neg(p_Up_neg), Upc_neg(p_Upc_neg), Uu_neg(p_Uu_neg), Fy_neg(p_Fy_neg), FcapFy_neg(p_FcapFy_neg), ResF_neg(p_ResF_neg),
+    posUp_0(p_posUp_0), posUpc_0(p_posUpc_0), posUu_0(p_posUu_0), posFy_0(p_posFy_0), posFcapFy_0(p_posFcapFy_0), posResF_0(p_posResF_0),
+    negUp_0(p_negUp_0), negUpc_0(p_negUpc_0), negUu_0(p_negUu_0), negFy_0(p_negFy_0), negFcapFy_0(p_negFcapFy_0), negResF_0(p_negResF_0),
     LAMBDA_S(p_LAMBDA_S), LAMBDA_C(p_LAMBDA_C), LAMBDA_A(p_LAMBDA_A), LAMBDA_K(p_LAMBDA_K), c_S(p_c_S), c_C(p_c_C), c_A(p_c_A), c_K(p_c_K), D_pos(p_D_pos), D_neg(p_D_neg)
 {
     this->revertToStart();
@@ -99,8 +99,8 @@ IMKPeakOriented::IMKPeakOriented(int tag, double p_Ke,
 
 IMKPeakOriented::IMKPeakOriented()
     :UniaxialMaterial(0, 0), Ke(0),
-    Up_pos(0), Upc_pos(0), Uu_pos(0), Fy_pos(0), FcapFy_pos(0), ResF_pos(0),
-    Up_neg(0), Upc_neg(0), Uu_neg(0), Fy_neg(0), FcapFy_neg(0), ResF_neg(0),
+    posUp_0(0), posUpc_0(0), posUu_0(0), posFy_0(0), posFcapFy_0(0), posResF_0(0),
+    negUp_0(0), negUpc_0(0), negUu_0(0), negFy_0(0), negFcapFy_0(0), negResF_0(0),
     LAMBDA_S(0), LAMBDA_C(0), LAMBDA_A(0), LAMBDA_K(0), c_S(0), c_C(0), c_A(0), c_K(0), D_pos(0), D_neg(0)
 {
     this->revertToStart();
@@ -118,21 +118,16 @@ int IMKPeakOriented::setTrialStrain(double strain, double strainRate)
 
     //state determination algorithm: defines the current force and tangent stiffness
     U		= strain; //set trial displacement
-    Ui_1	= Ui;
-    Fi_1	= Fi;
+    double  Ui_1	= Ui;
+    double  Fi_1	= Fi;
     Ui		= U;
-
+    double  dU	    = Ui - Ui_1;    // Incremental deformation at current step
+    double  dEi     = 0;
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////  MAIN CODE //////////////////////////////////////////////////////////
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-
-    // Incremental deformation at current step
-    dU	= Ui - Ui_1;
-
-
     if (Failure_Flag) {     // When a failure has already occured
         Fi 	= 0;
         dEi	= 0;
@@ -150,13 +145,13 @@ int IMKPeakOriented::setTrialStrain(double strain, double strainRate)
     //  Branch
     //      0:  Elastic
     //      1:  Unloading Branch
-    //      3:  Towards local Peak      +
-    //      4:  Towards global Peak     +
+    //      2:  Towards Local Peak      +
+    //      4:  Towards Global Peak     +
     //      5:  Towards Capping Point   +
     //      6:  Towards Residual Point  +
     //      7:  Residual Branch         +
-    //      13: Towards local Peak      -
-    //      14: Towards global Peak     -
+    //      12: Towards Local Peak      -
+    //      14: Towards Global Peak     -
     //      15: Towards Capping Point   -
     //      16: Towards Residual Point  -
     //      17: Residual Branch         -
@@ -164,10 +159,12 @@ int IMKPeakOriented::setTrialStrain(double strain, double strainRate)
     //      Yield_Flag:     Preserved.      When the deformation exceeds yield capacity for the first time.
     //      Excursion_Flag: Not preserved.  When crossing X-axis. Evokes re-considering of the deteriorations and which peak to go for.
     //      Reversal_Flag:  Not preserved.  When unloading starts. Evokes re-condiersing of the stiffness deterioration and peak point registration.
-        exBranch       	= Branch;
-        Excursion_Flag 	= false;
-        Reversal_Flag  	= false;
+        double  dF=0,betaS=0,betaC=0,betaA=0,betaK=0;
+        int     exBranch       	= Branch;
+        bool    Excursion_Flag 	= false;
+        bool    Reversal_Flag  	= false;
         if (Branch == 0) {
+            exBranch    = 0;
             // CHECK FOR YIELDING
             if (Ui > posUy) {
                 Yield_Flag 	= true;
@@ -177,7 +174,8 @@ int IMKPeakOriented::setTrialStrain(double strain, double strainRate)
                 Branch 	= 15;
             }
         } else if (Branch == 1) {
-            if (Fi_1*(Fi_1+dU*K_unload) <= 0) {
+            exBranch    = 1;
+            if (Fi_1*(Fi_1+dU*Kunload) <= 0) {
             // CHECK FOR NEW EXCURSION
                 Excursion_Flag 	= true;
             } else if (Ui > posUlocal) {
@@ -186,34 +184,61 @@ int IMKPeakOriented::setTrialStrain(double strain, double strainRate)
                 Branch 	= 14;
             }
         } else if (Fi_1*dU < 0) {
+            // CHECK FOR REVERSAL
             Reversal_Flag  	= true;
             Branch 	= 1;
         }
-    // Branch shifting from 3 -> 4 -> 5 -> 6 -> 7 can be considered.
-        if (Branch == 3 && Ui > posUlocal) {
-            Branch 	= 4;
+    // Branch shifting from 2 -> 4 -> 5 -> 6 -> 7 can be considered.
+        if (Branch == 2 && Ui > posUlocal) {
+            exBranch    = 2;
+            // if (Fpinch > posFlocal && Upinch > posUlocal) {
+            //     Branch  = 3;
+            // } else {
+                Branch 	= 4;
+            // }
+
         }
+        // if (Branch == 3 && Ui > Upinch) {
+        //     exBranch    = 3;
+        //     Branch      = 4;
+        // }
         if (Branch == 4 && Ui > posUglobal) {
-            Branch 	= 5;
+            exBranch    = 4;
+            Branch 	    = 5;
         }
         if (Branch == 5 && Ui > posUcap) {
-            Branch 	= 6;
+            exBranch    = 5;
+            Branch 	    = 6;
         }
         if (Branch == 6 && Ui > posUres) {
-            Branch 	= 7;
+            exBranch    = 6;
+            Branch 	    = 7;
         }
 
-        if (Branch == 13 && Ui < negUlocal) {
-            Branch 	= 14;
+        if (Branch == 12 && Ui < negUlocal) {
+            // exBranch    = 12;
+            // if (Fpinch < negFlocal && Upinch < negUlocal) {
+            //     Branch  = 13;
+            // } else {
+                Branch 	= 14;
+            // }
+
         }
+        // if (Branch == 13 && Ui < Upinch) {
+        //     exBranch    = 13;
+        //     Branch      = 14;
+        // }
         if (Branch == 14 && Ui < negUglobal) {
-            Branch 	= 15;
+            exBranch    = 14;
+            Branch 	    = 15;
         }
         if (Branch == 15 && Ui < negUcap) {
-            Branch 	= 16;
+            exBranch    = 15;
+            Branch 	    = 16;
         }
         if (Branch == 16 && Ui < negUres) {
-            Branch 	= 17;
+            exBranch    = 16;
+            Branch 	    = 17;
         }
     // UPDATE PEAK POINTS
         if (Reversal_Flag) {
@@ -233,45 +258,25 @@ int IMKPeakOriented::setTrialStrain(double strain, double strainRate)
                 }
             }
         }
-
         ///////////////////////////////////////////////////////////////////////////////////////////
         ///////////////////////////////////////////////////////////////////////////////////////////
         ///////////////////////////////////////////////////////////////////////////////////////////
-        /////////////////// UPDATE DETERIORATION PARAMETERS ///////////////////////////////////////
+        /////////////////// UPDATE UNLOADING STIFFNESS ////////////////////////////////////////////
         ///////////////////////////////////////////////////////////////////////////////////////////
         ///////////////////////////////////////////////////////////////////////////////////////////
         ///////////////////////////////////////////////////////////////////////////////////////////
-
-        // UPDATE DETERIORATION PARAMETERS AT EACH NEW EXCURSION
-
         if (Reversal_Flag) {
-            EpjK        = engAcml            - 0.5*(Fi_1 / K_unload)*Fi_1;
-            EiK         = engAcml - engDspt  - 0.5*(Fi_1 / K_unload)*Fi_1;
-            betaK       = pow( (EiK / (EtK - EpjK)), c_K );
-            K_unload    = K_unload * (1 - betaK);
-            TangentK    = K_unload;
+            double  EpjK    = engAcml            - 0.5*(Fi_1 / Kunload)*Fi_1;
+            double  EiK     = engAcml - engDspt  - 0.5*(Fi_1 / Kunload)*Fi_1;
+            betaK           = pow( (EiK / (engRefK - EpjK)), c_K );
+            Kunload        *= (1 - betaK);
+            Ktangent        = Kunload;
         // Detect unloading completed in a step.
-            if (Fi_1*(Fi_1+dU*K_unload) <= 0) {
+            if (Fi_1*(Fi_1+dU*Kunload) <= 0) {
+                exBranch        = 1;
                 Excursion_Flag  = true;
                 Reversal_Flag   = false;
             }
-        }
-        else {
-            betaK   = 0;
-        }
-        if (Excursion_Flag) {
-            //Epj   = engAcml + dEi;
-            Ei      = fmax(0, engAcml - engDspt);
-            betaS   = pow((Ei / (EtS - engAcml)), c_S);
-            betaC   = pow((Ei / (EtC - engAcml)), c_C);
-            betaA   = pow((Ei / (EtA - engAcml)), c_A);
-            engDspt = engAcml;
-        }
-        else {
-            //Epj   = engDspt;
-            betaS   = 0;
-            betaC   = 0;
-            betaA   = 0;
         }
         ///////////////////////////////////////////////////////////////////////////////////////////
         ///////////////////////////////////////////////////////////////////////////////////////////
@@ -280,8 +285,14 @@ int IMKPeakOriented::setTrialStrain(double strain, double strainRate)
         ///////////////////////////////////////////////////////////////////////////////////////////
         ///////////////////////////////////////////////////////////////////////////////////////////
         ///////////////////////////////////////////////////////////////////////////////////////////
+        // UPDATE DETERIORATION PARAMETERS AT EACH NEW EXCURSION
         // Update Positive Backbone and Target Peak Point
         if ( Excursion_Flag && Yield_Flag ) {
+            double  Ei      = fmax(0, engAcml - engDspt);
+            betaS   = pow((Ei / (engRefS - engAcml)), c_S);
+            betaC   = pow((Ei / (engRefC - engAcml)), c_C);
+            betaA   = pow((Ei / (engRefA - engAcml)), c_A);
+            engDspt = engAcml;
             // Positive loading backbone
             if (Fi_1 < 0) {
                 // Basic strength deterioration: Yield point
@@ -294,11 +305,11 @@ int IMKPeakOriented::setTrialStrain(double strain, double strainRate)
                 }
                 posUy       = posFy / Ke;
                 // Basic strength deterioration: Capping Point
-                sPCsp   = (posFy - posUy * posKp - posFcap + posKpc * posUcap) / (posKpc - posKp);
+                double  sPCsp   = (posFy - posUy * posKp - posFcap + posKpc * posUcap) / (posKpc - posKp);
                 posFcap = posFcap + (sPCsp - posUcap)*posKpc;
                 posUcap = sPCsp;
                 // Post-capping strength deterioration: Capping point
-                sPCpcp  = max(posUcap + betaC * D_pos*(posFcap - posKpc * posUcap) / (posKpc - posKp), posUy);
+                double  sPCpcp  = max(posUcap + betaC * D_pos*(posFcap - posKpc * posUcap) / (posKpc - posKp), posUy);
                 posFcap = posFcap + (sPCpcp - posUcap)*posKp;
                 posUcap = sPCpcp;
                 // Accelerated reloading stiffness deterioration: Target peak deformation point
@@ -328,11 +339,11 @@ int IMKPeakOriented::setTrialStrain(double strain, double strainRate)
                 }
                 negUy		= negFy / Ke;
                 // Basic strength deterioration: Capping point
-                sPCsn		= (negFy - negUy * negKp - negFcap + negKpc * negUcap) / (negKpc - negKp);
+                double  sPCsn		= (negFy - negUy * negKp - negFcap + negKpc * negUcap) / (negKpc - negKp);
                 negFcap	= negFcap + (sPCsn - negUcap)*negKpc;
                 negUcap	= sPCsn;
                 // Post-capping strength deterioration: Capping point
-                sPCpcn		= min(negUcap + betaC * D_neg*(negFcap - negKpc * negUcap) / (negKpc - negKp), negUy);
+                double  sPCpcn		= min(negUcap + betaC * D_neg*(negFcap - negKpc * negUcap) / (negKpc - negKp), negUy);
                 negFcap	= negFcap + (sPCpcn - negUcap)*negKp;
                 negUcap	= sPCpcn;
                 // Accelerated reloading stiffness deterioration: Target peak deformation point
@@ -352,7 +363,6 @@ int IMKPeakOriented::setTrialStrain(double strain, double strainRate)
                 negUres  	= (negFres - negFcap + negKpc * negUcap) / negKpc;
             }
         }
-
         ///////////////////////////////////////////////////////////////////////////////////////////
         ///////////////////////////////////////////////////////////////////////////////////////////
         ///////////////////////////////////////////////////////////////////////////////////////////
@@ -360,113 +370,143 @@ int IMKPeakOriented::setTrialStrain(double strain, double strainRate)
         ///////////////////////////////////////////////////////////////////////////////////////////
         ///////////////////////////////////////////////////////////////////////////////////////////
         ///////////////////////////////////////////////////////////////////////////////////////////
-
         if (Excursion_Flag) {
             // Detection of reloading completed in a step might be needed, while it's not as severe as a one step unloading.
-            u0 	= Ui_1 - (Fi_1 / K_unload);
+            double  u0 	= Ui_1 - (Fi_1 / Kunload);
+            double  Klocal, Kglobal;
+            // double  Uplstc;
+            // double  kappaD  = 0.6, kappaF=0.3;
             if (dU > 0) {
-                K_local    	= posFlocal   / (posUlocal  - u0);
-                K_global   	= posFglobal  / (posUglobal - u0);
-                if ( (posFlocal < posFglobal) && (K_local > K_global)) {
-                    Branch     	= 3;
-                    K_reload   	= K_local;
+                Klocal    	= posFlocal     / (posUlocal  - u0);
+                Kglobal   	= posFglobal    / (posUglobal - u0);
+                // Uplstc      = posUglobal    - (posFglobal / Kunload);
+                // Upinch      = (1-kappaD)*Uplstc;
+                // Fpinch      = kappaF*posFglobal*(Upinch-u0)/(posUglobal-u0);
+                if ( (posFlocal < posFglobal) && (Klocal > Kglobal)) {
+                    Branch     	= 2;
+                    Kreload   	= Klocal;
                 }
                 else {
+                    // Branch      = 3;
+                    // Kreload     = Fpinch        / (Upinch       - u0);
                     Branch     	= 4;
-                    K_reload   	= K_global;
+                    Kreload   	= Kglobal;
                 }
             }
             else {
-                K_local    	= negFlocal   / (negUlocal  - u0);
-                K_global   	= negFglobal  / (negUglobal - u0);
-                if ( (negFlocal > negFglobal) && (K_local > K_global)) {
-                    Branch     	= 13;
-                    K_reload   	= K_local;
+                Klocal    	= negFlocal     / (negUlocal  - u0);
+                Kglobal   	= negFglobal    / (negUglobal - u0);
+                // Uplstc      = negUglobal    - (negFglobal / Kunload);
+                // Upinch      = (1-kappaD)*Uplstc;
+                // Fpinch      = kappaF*negFglobal*(Upinch-u0)/(negUglobal-u0);
+                if ( (negFlocal > negFglobal) && (Klocal > Kglobal)) {
+                    Branch     	= 12;
+                    Kreload   	= Klocal;
                 }
                 else {
+                    // Branch      = 13;
+                    // Kreload     = Fpinch        / (Upinch       - u0);
                     Branch     	= 14;
-                    K_reload   	= K_global;
+                    Kreload   	= Kglobal;
                 }
             }
-            dF 	= 0             - Fi_1 + K_reload*  (Ui - u0);
-            TangentK			= K_reload;
+            dF 	= 0             - Fi_1 + Kreload*  (Ui - u0);
+            Ktangent			= Kreload;
 // With Branch Change
     // Positive Force
         }
+        // else if (Branch == 3 && exBranch == 2) {
+        //     Kreload     = (Fpinch   - posFlocal)    / (Upinch       - posUlocal);
+        //     dF          = posFlocal - Fi_1          + Kreload*(Ui   - posUlocal);
+        //     Ktangent    = Kreload;
+        // }
         // CASE 4: WHEN RELOADING BUT BETWEEN LAST CYCLE PEAK POINT AND GLOBAL PEAK POINT
         // CASE 5: WHEN LOADING IN GENERAL TOWARDS THE TARGET PEAK
         // CASE 6: WHEN LOADING IN GENERAL TOWARDS THE LAST CYCLE PEAK POINT BUT BEYOND IT
-        else if (Branch == 4 && exBranch != 4) {
-            K_reload   	= (posFglobal - posFlocal) / (posUglobal - posUlocal);
-            TangentK	= K_reload;
-            dF 	= posFlocal   - Fi_1 + K_reload*  (Ui - posUlocal);
+        else if (Branch == 4 && exBranch == 2) {
+            Kreload   	= (posFglobal   - posFlocal)    / (posUglobal - posUlocal);
+            dF      	= posFlocal     - Fi_1          + Kreload*(Ui - posUlocal);
+            Ktangent	= Kreload;
         }
+        // else if (Branch == 4 && exBranch == 3) {
+        //     Kreload   	= (posFglobal   - Fpinch)   / (posUglobal   - Upinch);
+        //     dF 	        = Fpinch        - Fi_1      + Kreload*(Ui   - Upinch);
+        //     Ktangent	= Kreload;
+        // }
         // CASE 7: WHEN LOADING BEYOND THE TARGET PEAK BUT BEFORE THE CAPPING POINT
         else if (Branch == 5 && exBranch == 0) {
-            TangentK	= posKp;
             dF 	= posFy       - Fi_1 + posKp*   (Ui - posUy);
+            Ktangent	= posKp;
         }
-        else if (Branch == 5 && exBranch != 5) {
-            TangentK	= posKp;
+        else if (Branch == 5 && exBranch == 4) {
             dF 	= posFglobal  - Fi_1 + posKp*   (Ui - posUglobal);
+            Ktangent	= posKp;
         }
         // CASE 8: WHEN LOADING AND BETWEEN THE CAPPING POINT AND THE RESIDUAL POINT
         else if (Branch == 6 && exBranch == 5) {
-            TangentK	= posKpc;
             dF 	= posFcap     - Fi_1 + posKpc*  (Ui - posUcap);
+            Ktangent	= posKpc;
         }
-        else if (Branch == 6 && exBranch != 6) {
-            TangentK	= posKpc;
+        else if (Branch == 6 && exBranch == 4) {
             dF 	= posFglobal  - Fi_1 + posKpc*  (Ui - posUglobal);
+            Ktangent	= posKpc;
         }
         // CASE 9: WHEN LOADING AND BEYOND THE RESIDUAL POINT
         else if (Branch == 7 && exBranch != 7) {
-            TangentK	= 0;
             dF 	= posFres     - Fi_1;
+            Ktangent	= 0;
     // Negative Force
         }
-        else if (Branch == 14 && exBranch != 14) {
+        // else if (Branch == 13 && exBranch == 12) {
+        //     Kreload     = (Fpinch   - negFlocal)    / (Upinch       - negUlocal);
+        //     dF          = negFlocal - Fi_1          + Kreload*(Ui   - negUlocal);
+        //     Ktangent    = Kreload;
+        // }
+        else if (Branch == 14 && exBranch == 12) {
         // CASE 4: WHEN RELOADING BUT BETWEEN LAST CYCLE PEAK POINT AND GLOBAL PEAK POINT
         // CASE 5: WHEN LOADING IN GENERAL TOWARDS THE TARGET PEAK
         // CASE 6: WHEN LOADING IN GENERAL TOWARDS THE LAST CYCLE PEAK POINT BUT BEYOND IT
-            K_reload   	= (negFglobal - negFlocal) / (negUglobal - negUlocal);
-            TangentK	= K_reload;
-            dF         	= negFlocal - Fi_1 + K_reload*(Ui - negUlocal);
+            Kreload   	= (negFglobal - negFlocal) / (negUglobal - negUlocal);
+            dF         	= negFlocal - Fi_1 + Kreload*(Ui - negUlocal);
+            Ktangent	= Kreload;
         }
+        // else if (Branch == 14 && exBranch == 13) {
+        //     Kreload   	= (negFglobal   - Fpinch)   / (negUglobal   - Upinch);
+        //     dF 	        = Fpinch        - Fi_1      + Kreload*(Ui   - Upinch);
+        //     Ktangent	= Kreload;
+        // }
         // CASE 7: WHEN LOADING BEYOND THE TARGET PEAK BUT BEFORE THE CAPPING POINT
         else if (Branch == 15 && exBranch == 0) {
-            TangentK	= negKp;
             dF 	= negFy - Fi_1 + negKp*(Ui - negUy);
+            Ktangent	= negKp;
         }
-        else if (Branch == 15 && exBranch != 15) {
-            TangentK	= negKp;
+        else if (Branch == 15 && exBranch == 14) {
             dF 	= negFglobal - Fi_1 + negKp*(Ui - negUglobal);
+            Ktangent	= negKp;
         }
         // CASE 8: WHEN LOADING AND BETWEEN THE CAPPING POINT AND THE RESIDUAL POINT
         else if (Branch == 16 && exBranch == 15) {
-            TangentK	= negKpc;
             dF 	= negFcap - Fi_1 + negKpc*(Ui - negUcap);
+            Ktangent	= negKpc;
         }
-        else if (Branch == 16 && exBranch != 16) {
-            TangentK	= negKpc;
+        else if (Branch == 16 && exBranch == 14) {
             dF 	= negFglobal - Fi_1 + negKpc*(Ui - negUglobal);
+            Ktangent	= negKpc;
         }
         // CASE 9: WHEN LOADING AND BEYOND THE RESIDUAL POINT
         else if (Branch == 17 && exBranch != 17) {
-            TangentK	= 0;
             dF 	= negFres - Fi_1;
+            Ktangent	= 0;
 // Without Branch Change
         } else {
-            dF	= dU*TangentK;
+            dF	= dU*Ktangent;
         }
     // Branch Change check
         // if (Branch!=exBranch) {
         //  std::cout << exBranch << " -> " << Branch << "\n";
         // }
-
-        // Force
+// Force
         Fi	= Fi_1 + dF;
-
         ///////////////////////////////////////////////////////////////////////////////////////////
         ///////////////////////////////////////////////////////////////////////////////////////////
         ///////////////////////////////////////////////////////////////////////////////////////////
@@ -474,20 +514,21 @@ int IMKPeakOriented::setTrialStrain(double strain, double strainRate)
         ///////////////////////////////////////////////////////////////////////////////////////////
         ///////////////////////////////////////////////////////////////////////////////////////////
         ///////////////////////////////////////////////////////////////////////////////////////////
-
         // Failure criteria (Tolerance	= 1//)
     // I have no idea about why it can' t be 0 nor 1.
-        FailS	= ( betaS < -0.01 || betaS > 1.01 );
-        FailC	= ( betaC < -0.01 || betaC > 1.01 );
-        FailA	= ( betaA < -0.01 || betaA > 1.01 );
-        FailK	= ( betaK < -0.01 || betaK > 1.01 );
-        FailPp 	= ( posFglobal == 0               );
-        FailPn 	= ( negFglobal == 0               );
-        FailDp 	= ( Ui >  Uu_pos                  );
-        FailDn 	= ( Ui < -Uu_neg                  );
-        FailRp 	= ( Branch ==  7 && posFres == 0  );
-        FailRn 	= ( Branch == 17 && negFres == 0  );
-        Failure_Flag    = (FailS||FailC||FailA||FailK||FailPp||FailPn||FailRp||FailRn||FailDp||FailDn);
+        bool    FailS	= ( betaS < -0.01 || betaS > 1.01 );
+        bool    FailC	= ( betaC < -0.01 || betaC > 1.01 );
+        bool	FailA	= ( betaA < -0.01 || betaA > 1.01 );
+        bool	FailK	= ( betaK < -0.01 || betaK > 1.01 );
+        bool	FailPp 	= ( posFglobal == 0               );
+        bool	FailPn 	= ( negFglobal == 0               );
+        bool	FailDp 	= ( Ui >  posUu_0                 );
+        bool	FailDn 	= ( Ui < -negUu_0                 );
+        bool	FailRp 	= ( Branch ==  7 && posFres == 0  );
+        bool	FailRn 	= ( Branch == 17 && negFres == 0  );
+        if (FailS||FailC||FailA||FailK||FailPp||FailPn||FailRp||FailRn||FailDp||FailDn) {
+            Failure_Flag    = true;
+        }
         if (Failure_Flag) {
             Fi 	= 0;
         }
@@ -495,13 +536,8 @@ int IMKPeakOriented::setTrialStrain(double strain, double strainRate)
     }
     //// Energy
     engAcml	+= dEi; 	
-
-    //// Update Variables
-    du_i_1	= dU;
-
     // Tangent Stiffeness Calculation
-    ki	= TangentK;
-
+    ki      = Ktangent;
     ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////// END OF MAIN CODE ///////////////////////////////////////////////////////
@@ -520,7 +556,7 @@ double IMKPeakOriented::getStress(void)
 double IMKPeakOriented::getTangent(void)
 {
     //cout << " getTangent" << endln;
-    return (TangentK);
+    return (Ktangent);
 }
 
 double IMKPeakOriented::getInitialTangent(void)
@@ -540,128 +576,101 @@ int IMKPeakOriented::commitState(void)
     //cout << " commitState" << endln;
 
     //commit trial  variables
-
-    cU		= U;
-
-    cUi		= Ui;
-    cFi		= Fi;
-    cUi_1	= Ui_1;
-    cFi_1	= Fi_1;
-
-    cTangentK	= TangentK;
-
-    cdu_i_1	= du_i_1;
-
-    cPosUy	= posUy;
+// 3 State
+    cU		    = U;
+    cUi	    	= Ui;
+    cFi	        = Fi;
+// 3 Stiffness
+    cKtangent	= Ktangent;
+    cKunload	= Kunload;
+    cKreload	= Kreload;
+// 12 Pos U and F
+    cPosUy	    = posUy;
+    cPosFy	    = posFy;
     cPosUcap	= posUcap;
-    cPosFy	= posFy;
     cPosFcap	= posFcap;
-    cPosUglobal	= posUglobal;
-    cPosFglobal	= posFglobal;
-
-    cPosUres	= posUres;
-    cPosFres	= posFres;
-    cPosKp	= posKp;
-    cPosKpc	= posKpc;
-
-    cNegUy	= negUy;
-    cNegUcap	= negUcap;
-    cNegFy	= negFy;
-    cNegFcap	= negFcap;
-    cNegUglobal	= negUglobal;
-    cNegFglobal	= negFglobal;
-
-    cNegUres	= negUres;
-    cNegFres	= negFres;
-    cNegKp	= negKp;
-    cNegKpc	= negKpc;
-
-    cK_unload	= K_unload;
-
-    cEngAcml	= engAcml;
-    cEngDspt	= engDspt;
-
-    // cu0	= u0;
-
     cPosUlocal	= posUlocal;
     cPosFlocal	= posFlocal;
+    cPosUglobal	= posUglobal;
+    cPosFglobal	= posFglobal;
+    cPosUres	= posUres;
+    cPosFres	= posFres;
+    cPosKp	    = posKp;
+    cPosKpc	    = posKpc;
+// 12 Neg U and F
+    cNegUy	    = negUy;
+    cNegFy	    = negFy;
+    cNegUcap	= negUcap;
+    cNegFcap	= negFcap;
     cNegUlocal	= negUlocal;
     cNegFlocal	= negFlocal;
-
+    cNegUglobal	= negUglobal;
+    cNegFglobal	= negFglobal;
+    cNegUres	= negUres;
+    cNegFres	= negFres;
+    cNegKp	    = negKp;
+    cNegKpc	    = negKpc;
+// 2 Energy
+    cEngAcml	= engAcml;
+    cEngDspt	= engDspt;
+// 3 Flag
     cFailure_Flag		= Failure_Flag;
-    // cExcursion_Flag	= Excursion_Flag;
-    cExBranch			= exBranch;
-    cBranch				= Branch;
-    // cTargetPeak_Flag= TargetPeak_Flag;
     cYield_Flag			= Yield_Flag;
-    // cReversal_Flag	= Reversal_Flag;
-
-    cK_reload	= K_reload;
-
+    cBranch				= Branch;
+// 2 Pinching
+    // cFpinch     = Fpinch;
+    // cUpinch     = Upinch;
     return 0;
 }
+
 int IMKPeakOriented::revertToLastCommit(void)
 {
     //cout << " revertToLastCommit" << endln;
     //the opposite of commit trial history variables
-    U	= cU;
-    Ui	= cUi;
-    Fi	= cFi;
-    Ui_1	= cUi_1;
-    Fi_1	= cFi_1;
-    TangentK	= cTangentK;
-    du_i_1	= cdu_i_1;
-
-    posUy	= cPosUy;
-    posUcap	= cPosUcap;
-    posFy	= cPosFy;
-    posFcap	= cPosFcap;
-    posUglobal	= cPosUglobal;
-    posFglobal	= cPosFglobal;
-
-    posUres	= cPosUres;
-    posFres	= cPosFres;
-    posKp	= cPosKp;
-    posKpc	= cPosKpc;
-
-
-    negUy	= cNegUy;
-    negUcap	= cNegUcap;
-    negFy	= cNegFy;
-    negFcap	= cNegFcap;
-    negUglobal	= cNegUglobal;
-    negFglobal	= cNegFglobal;
-
-    negUres	= cNegUres;
-    negFres	= cNegFres;
-    negKp	= cNegKp;
-    negKpc	= cNegKpc;
-
-
-    K_unload	= cK_unload;
-
-
-
-    engAcml	= cEngAcml;
-    engDspt	= cEngDspt;
-
-    posUlocal	= cPosUlocal;
-    posFlocal	= cPosFlocal;
-    negUlocal	= cNegUlocal;
-    negFlocal	= cNegFlocal;
-
+// 3 State Variables
+    U	            = cU;
+    Ui	            = cUi;
+    Fi	            = cFi;
+// 3 Stiffness
+    Ktangent	    = cKtangent;
+    Kunload	        = cKunload;
+    Kreload	        = cKreload;
+// 12 Positive U and F
+    posUy	        = cPosUy;
+    posFy	        = cPosFy;
+    posUcap	        = cPosUcap;
+    posFcap	        = cPosFcap;
+    posUlocal	    = cPosUlocal;
+    posFlocal	    = cPosFlocal;
+    posUglobal	    = cPosUglobal;
+    posFglobal	    = cPosFglobal;
+    posUres	        = cPosUres;
+    posFres	        = cPosFres;
+    posKp	        = cPosKp;
+    posKpc	        = cPosKpc;
+// 12 Negative U and F
+    negUy	        = cNegUy;
+    negFy	        = cNegFy;
+    negUcap	        = cNegUcap;
+    negFcap	        = cNegFcap;
+    negUlocal	    = cNegUlocal;
+    negFlocal	    = cNegFlocal;
+    negUglobal	    = cNegUglobal;
+    negFglobal	    = cNegFglobal;
+    negUres	        = cNegUres;
+    negFres	        = cNegFres;
+    negKp       	= cNegKp;
+    negKpc	        = cNegKpc;
+// 2 Energy
+    engAcml	        = cEngAcml;
+    engDspt	        = cEngDspt;
+// 3 Flag
     Failure_Flag	= cFailure_Flag;
-    // Excursion_Flag	= cExcursion_Flag;
-    exBranch	= cExBranch;
-    Branch		= cBranch;
-    // TargetPeak_Flag	= cTargetPeak_Flag;
-    Yield_Flag	= cYield_Flag;
-    // Reversal_Flag	= cReversal_Flag;
-
-    // u0	= cu0;
-
-    K_reload	= cK_reload;
-
+    Yield_Flag	    = cYield_Flag;
+    Branch		    = cBranch;
+// 2 Pinching
+    // Fpinch          = cFpinch;
+    // Upinch          = cUpinch;
     return 0;
 }
 
@@ -670,230 +679,189 @@ int IMKPeakOriented::revertToStart(void)
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////\\
     //////////////////////////////////////////////////////////////////// ONE TIME CALCULATIONS ////////////////////////////////////////////////////////////////////\\
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////*/
+// 14 Initial Values
+    posUy_0  	= posFy_0   / Ke;
+    posUcap_0	= posUy_0   + posUp_0;
+    posFcap_0	= posFcapFy_0*posFy_0;
+    posKp_0 	= (posFcap_0 - posFy_0) / posUp_0;
+    posKpc_0 	= posFcap_0 / posUpc_0;
+    negUy_0 	= negFy_0   / Ke;
+    negUcap_0	= negUy_0   + negUp_0;
+    negFcap_0	= negFcapFy_0*negFy_0;
+    negKp_0 	= (negFcap_0 - negFy_0) / negUp_0;
+    negKpc_0 	= negFcap_0 / negUpc_0;
+    engRefS	    = LAMBDA_S  * posFy_0;
+    engRefC	    = LAMBDA_C  * posFy_0;
+    engRefA	    = LAMBDA_A  * posFy_0;
+    engRefK	    = LAMBDA_K  * posFy_0;
+// 12 Positive U and F
+    posUy		= cPosUy	    = posUy_0;
+    posFy    	= cPosFy 	    = posFy_0;
+    posUcap  	= cPosUcap	    = posUcap_0;
+    posFcap  	= cPosFcap	    = posFcap_0;
+    posUlocal	= cPosUlocal	= posUy_0;
+    posFlocal	= cPosFlocal	= posFy_0;
+    posUglobal	= cPosUglobal	= posUy_0;
+    posFglobal	= cPosFglobal	= posFy_0;
+    posFres  	= cPosFres	    = posFy_0*posResF_0;
 
+    posKp    	= cPosKp 	    =  posKp_0;
+    posKpc   	= cPosKpc   	= -posKpc_0;
+    posUres	    = cPosUres	    = (posFres - posFcap) / posKpc + posUcap;
+// 12 Negative U and F
+    negUy    	= cNegUy	    = -negUy_0;
+    negFy    	= cNegFy	    = -negFy_0;
+    negUcap  	= cNegUcap	    = -negUcap_0;
+    negFcap  	= cNegFcap	    = -negFcap_0;
+    negUlocal	= cNegUlocal	= -negUy_0;
+    negFlocal	= cNegFlocal	= -negFy_0;
+    negUglobal	= cNegUglobal	= -negUy_0;
+    negFglobal	= cNegFglobal	= -negFy_0;
+    negFres  	= cNegFres	    = -negFy_0*negResF_0;
 
-
-    betaS	= 0;
-    betaC	= 0;
-    betaK	= 0;
-    betaA	= 0;
-
-    Uy_pos  	= Fy_pos / Ke;
-    Ucap_pos	= Uy_pos + Up_pos;
-    Fcap_pos	= FcapFy_pos*Fy_pos;
-    Kp_pos 		= (Fcap_pos - Fy_pos) / Up_pos;
-    Kpc_pos 	= Fcap_pos / Upc_pos;
-
-    Uy_neg 		= Fy_neg / Ke;
-    Ucap_neg	= Uy_neg + Up_neg;
-    Fcap_neg	= FcapFy_neg*Fy_neg;
-    Kp_neg 		= (Fcap_neg - Fy_neg) / Up_neg;
-    Kpc_neg 	= Fcap_neg / Upc_neg;
-
-    posUglobal	= cPosUglobal	= Uy_pos;
-    posFglobal	= cPosFglobal	= Fy_pos;
-    negUglobal	= cNegUglobal	= -Uy_neg;
-    negFglobal	= cNegFglobal	= -Fy_neg;
-
-    posUy		= cPosUy	=  Uy_pos;
-    posFy    	= cPosFy 	=  Fy_pos;
-    posKp    	= cPosKp 	=  Kp_pos;
-    posKpc   	= cPosKpc	= -Kpc_pos;
-    negUy    	= cNegUy	= -Uy_neg;
-    negFy    	= cNegFy	= -Fy_neg;
-    negKp    	= cNegKp	=  Kp_neg;
-    negKpc   	= cNegKpc	= -Kpc_neg;
-
-    posUcap  	= cPosUcap	= Ucap_pos;
-    posFcap  	= cPosFcap	= Fcap_pos;
-    posFres  	= cPosFres	= Fy_pos*ResF_pos;
-    negUcap  	= cNegUcap	= -Ucap_neg;
-    negFcap  	= cNegFcap	= -Fcap_neg;
-    negFres  	= cNegFres	= -Fy_neg*ResF_neg;
-
-    K_unload	= cK_unload	= Ke;
-
-    posUres	= cPosUres	= (posFres - posFcap) / posKpc + posUcap;
-    negUres	= cNegUres	= (negFres - negFcap) / negKpc + negUcap;
-
-    engAcml 	= cEngAcml	= 0.0;
-    engDspt	= cEngDspt	= 0.0;
-
-    u0	= 0.0;
-
-    EtS	= LAMBDA_S *Fy_pos;
-    EtC	= LAMBDA_C *Fy_pos;
-    EtA	= LAMBDA_A *Fy_pos;
-    EtK	= LAMBDA_K *Fy_pos;
-
+    negKp    	= cNegKp	    =  negKp_0;
+    negKpc   	= cNegKpc	    = -negKpc_0;
+    negUres	    = cNegUres	    = (negFres - negFcap) / negKpc + negUcap;
+// 3 State Values
+    U	        = cU	        = 0;
+    Ui      	= cUi 	        = 0;
+    Fi 	        = cFi 	        = 0;
+// 3 Stiffness
+    Ktangent	= cKtangent	    = Ke;
+    Kunload	    = cKunload	    = Ke;
+    Kreload	    = cKreload      = Ke;
+// 3 Flag
     Failure_Flag 	= cFailure_Flag	  	= false;
-    Excursion_Flag 	= cExcursion_Flag 	= false;
-    Branch      	= cBranch         	= 0;
-    exBranch    	= cExBranch   	  	= false;
-    // TargetPeak_Flag 	= cTargetPeak_Flag 	= false;
     Yield_Flag		= cYield_Flag	  	= false;
-    Reversal_Flag	= cReversal_Flag  	= false;
-
-    posUlocal	= cPosUlocal	=  Uy_pos;
-    posFlocal	= cPosFlocal	=  Fy_pos;
-    negUlocal	= cNegUlocal	= -Uy_neg;
-    negFlocal	= cNegFlocal	= -Fy_neg;
-
-    K_reload		= cK_reload 	= Ke;
-
-    cdu_i_1	= 0;
-
-    //initially I zero everything   
-    U	= cU	= 0;
-    Ui 	= cUi 	= 0;
-    Fi 	= cFi 	= 0;
-    Ui_1  	= cUi_1 	= 0;
-    Fi_1	= cFi_1	= 0;
-
-    TangentK	= cTangentK	= Ke;
-    //cout << " revertToStart:" << endln; //<< " U=" << U << " Ui=" << Ui << " TanK=" << TangentK << endln;
-
+    Branch      	= cBranch         	= 0;
+// 2 Energy
+    engAcml 	= cEngAcml	    = 0.0;
+    engDspt	    = cEngDspt	    = 0.0;
+// 2 Pinching
+    // Fpinch      = cFpinch       = 0.0;
+    // Upinch      = cUpinch       = 0.0;
+    //cout << " revertToStart:" << endln; //<< " U=" << U << " Ui=" << Ui << " TanK=" << Ktangent << endln;
     return 0;
 }
 
 UniaxialMaterial *
 IMKPeakOriented::getCopy(void)
 {
-    IMKPeakOriented *theCopy	= new IMKPeakOriented(this->getTag(), Ke,
-        Uy_pos, Ucap_pos, Uu_pos, Fy_pos, FcapFy_pos, ResF_pos,
-        Uy_neg, Ucap_neg, Uu_neg, Fy_neg, FcapFy_neg, ResF_neg,
+    IMKPeakOriented *theCopy = new IMKPeakOriented(this->getTag(), Ke,
+        posUy_0, posUcap_0, posUu_0, posFy_0, posFcapFy_0, posResF_0,
+        negUy_0, negUcap_0, negUu_0, negFy_0, negFcapFy_0, negResF_0,
         LAMBDA_S, LAMBDA_C, LAMBDA_A, LAMBDA_K, c_S, c_C, c_A, c_K, D_pos, D_neg);
 
     //cout << " getCopy" << endln;
-
-    theCopy->U	= U;
-    theCopy->cU	= cU;
-
-    theCopy->TangentK	= TangentK;
-
-    theCopy->Ui		= Ui;
-    theCopy->Fi		= Fi;
-    theCopy->Ui_1	= Ui_1;
-    theCopy->Fi_1	= Fi_1;
-    theCopy->du_i_1	= du_i_1;
-
-    theCopy->posUy		= posUy;
-    theCopy->posUcap	= posUcap;
-    theCopy->posFy		= posFy;
-    theCopy->posFcap	= posFcap;
-    theCopy->posUglobal	= posUglobal;
-    theCopy->posFglobal	= posFglobal;
-    theCopy->posUres	= posUres;
-    theCopy->posFres	= posFres;
-    theCopy->posKp		= posKp;
-    theCopy->posKpc	= posKpc;
-
-    theCopy->negUy		= negUy;
-    theCopy->negUcap	= negUcap;
-    theCopy->negFy		= negFy;
-    theCopy->negFcap	= negFcap;
-    theCopy->negUglobal	= negUglobal;
-    theCopy->negFglobal	= negFglobal;
-    theCopy->negUres	= negUres;
-    theCopy->negFres	= negFres;
-    theCopy->negKp		= negKp;
-    theCopy->negKpc	= negKpc;
-
-    theCopy->K_unload	= K_unload;
-
-    theCopy->engAcml		= engAcml;
-    theCopy->engDspt	= engDspt;
-
-    theCopy->u0	= u0;
-
-    theCopy->posUlocal	= posUlocal;
-    theCopy->posFlocal	= posFlocal;
-    theCopy->negUlocal	= negUlocal;
-    theCopy->negFlocal	= negFlocal;
-
-    theCopy->Failure_Flag 		= Failure_Flag;
-    theCopy->Excursion_Flag 	= Excursion_Flag;
-    theCopy->exBranch 	= exBranch;
-    // theCopy->TargetPeak_Flag= TargetPeak_Flag;
-    theCopy->Yield_Flag 		= Yield_Flag;
-    theCopy->Reversal_Flag		= Reversal_Flag;
-
-    theCopy->K_reload	= K_reload;
-
-    theCopy->cTangentK	= cTangentK;
-
-    theCopy->cUi	= cUi;
-    theCopy->cFi	= cFi;
-    theCopy->cUi_1	= cUi_1;
-    theCopy->cFi_1	= cFi_1;
-    theCopy->cdu_i_1	= cdu_i_1;
-
-    theCopy->cPosUy	= cPosUy;
-    theCopy->cPosUcap	= cPosUcap;
-    theCopy->cPosFy	= cPosFy;
-    theCopy->cPosFcap	= cPosFcap;
-    theCopy->cPosUglobal	= cPosUglobal;
-    theCopy->cPosFglobal	= cPosFglobal;
-    theCopy->cPosUres	= cPosUres;
-    theCopy->cPosFres	= cPosFres;
-    theCopy->cPosKp	= cPosKp;
-    theCopy->cPosKpc	= cPosKpc;
-
-    theCopy->cNegUy	= cNegUy;
-    theCopy->cNegUcap	= cNegUcap;
-    theCopy->cNegFy	= cNegFy;
-    theCopy->cNegFcap	= cNegFcap;
-    theCopy->cNegUglobal	= cNegUglobal;
-    theCopy->cNegFglobal	= cNegFglobal;
-    theCopy->cNegUres	= cNegUres;
-    theCopy->cNegFres	= cNegFres;
-    theCopy->cNegKp	= cNegKp;
-    theCopy->cNegKpc	= cNegKpc;
-
-    theCopy->cK_unload	= cK_unload;
-
-    theCopy->cEngAcml 	= cEngAcml;
-    theCopy->cEngDspt	= cEngDspt;
-
-    theCopy->cu0	= cu0;
-
-    theCopy->cPosUlocal	= cPosUlocal;
-    theCopy->cPosFlocal	= cPosFlocal;
-    theCopy->cNegUlocal	= cNegUlocal;
-    theCopy->cNegFlocal	= cNegFlocal;
-
-    theCopy->cFailure_Flag		= cFailure_Flag;
-    theCopy->cExcursion_Flag	= cExcursion_Flag;
-    theCopy->cExBranch			= cExBranch;
-    // theCopy->cTargetPeak_Flag	= cTargetPeak_Flag;
-    theCopy->cYield_Flag 		= cYield_Flag;
-    theCopy->cReversal_Flag		= cReversal_Flag;
-
-    theCopy->cK_reload	= cK_reload;
-
+// 3 State Values
+    theCopy->U          = U;
+    theCopy->Ui         = Ui;
+    theCopy->Fi         = Fi;
+// 3 Stiffness
+    theCopy->Ktangent  = Ktangent;
+    theCopy->Kunload   = Kunload;
+    theCopy->Kreload   = Kreload;
+// 12 Positive U and F
+    theCopy->posUy      = posUy;
+    theCopy->posFy      = posFy;
+    theCopy->posUcap    = posUcap;
+    theCopy->posFcap    = posFcap;
+    theCopy->posUlocal  = posUlocal;
+    theCopy->posFlocal  = posFlocal;
+    theCopy->posUglobal = posUglobal;
+    theCopy->posFglobal = posFglobal;
+    theCopy->posUres    = posUres;
+    theCopy->posFres    = posFres;
+    theCopy->posKp      = posKp;
+    theCopy->posKpc     = posKpc;
+// 12 Negative U and F
+    theCopy->negUy      = negUy;
+    theCopy->negFy      = negFy;
+    theCopy->negUcap    = negUcap;
+    theCopy->negFcap    = negFcap;
+    theCopy->negUlocal  = negUlocal;
+    theCopy->negFlocal  = negFlocal;
+    theCopy->negUglobal = negUglobal;
+    theCopy->negFglobal = negFglobal;
+    theCopy->negUres    = negUres;
+    theCopy->negFres    = negFres;
+    theCopy->negKp      = negKp;
+    theCopy->negKpc     = negKpc;
+// 2 Energy
+    theCopy->engAcml    = engAcml;
+    theCopy->engDspt    = engDspt;
+// 3 Flag
+    theCopy->Failure_Flag   = Failure_Flag;
+    theCopy->Yield_Flag     = Yield_Flag;
+    theCopy->Branch     = Branch;
+// 3 State
+    theCopy->cU         = cU;
+    theCopy->cUi        = cUi;
+    theCopy->cFi        = cFi;
+// 3 Stiffness
+    theCopy->cKtangent = cKtangent;
+    theCopy->cKunload  = cKunload;
+    theCopy->cKreload  = cKreload;
+// 12 Positive U and F
+    theCopy->cPosUy     = cPosUy;
+    theCopy->cPosFy     = cPosFy;
+    theCopy->cPosUcap   = cPosUcap;
+    theCopy->cPosFcap   = cPosFcap;
+    theCopy->cPosUlocal = cPosUlocal;
+    theCopy->cPosFlocal = cPosFlocal;
+    theCopy->cPosUglobal= cPosUglobal;
+    theCopy->cPosFglobal= cPosFglobal;
+    theCopy->cPosUres   = cPosUres;
+    theCopy->cPosFres   = cPosFres;
+    theCopy->cPosKp     = cPosKp;
+    theCopy->cPosKpc    = cPosKpc;
+// 12 Negative U and F
+    theCopy->cNegUy     = cNegUy;
+    theCopy->cNegFy     = cNegFy;
+    theCopy->cNegUcap   = cNegUcap;
+    theCopy->cNegFcap   = cNegFcap;
+    theCopy->cNegUglobal= cNegUglobal;
+    theCopy->cNegFglobal= cNegFglobal;
+    theCopy->cNegUlocal = cNegUlocal;
+    theCopy->cNegFlocal = cNegFlocal;
+    theCopy->cNegUres   = cNegUres;
+    theCopy->cNegFres   = cNegFres;
+    theCopy->cNegKp     = cNegKp;
+    theCopy->cNegKpc    = cNegKpc;
+// 2 Energy
+    theCopy->cEngAcml   = cEngAcml;
+    theCopy->cEngDspt   = cEngDspt;
+// 3 Flag
+    theCopy->cFailure_Flag  = cFailure_Flag;
+    theCopy->cYield_Flag    = cYield_Flag;
+    theCopy->cBranch    = Branch;
+// 2 Pinching
+    // theCopy->cFpinch    = Fpinch;
+    // theCopy->cUpinch    = Upinch;
     return theCopy;
 }
 
 int IMKPeakOriented::sendSelf(int cTag, Channel &theChannel)
 {
-    int res	= 0;
+    int res = 0;
     cout << " sendSelf" << endln;
 
     static Vector data(137);
-    data(0)	= this->getTag();
+    data(0) = this->getTag();
+// 23 Fixed Input Material Parameters 1-23
     data(1)  	= Ke;
-    data(2)  	= Uy_pos;
-    data(3)  	= Ucap_pos;
-    data(4)  	= Uu_pos;
-    data(5)  	= Fy_pos;
-    data(6)  	= FcapFy_pos;
-    data(7)  	= ResF_pos;
-    data(8)  	= Uy_neg;
-    data(9)  	= Ucap_neg;
-    data(10) 	= Uu_neg;
-    data(11) 	= Fy_neg;
-    data(12) 	= FcapFy_neg;
-    data(13) 	= ResF_neg;
+    data(2)  	= posUp_0;
+    data(3)  	= posUpc_0;
+    data(4)  	= posUu_0;
+    data(5)  	= posFy_0;
+    data(6)  	= posFcapFy_0;
+    data(7)  	= posResF_0;
+    data(8)  	= negUp_0;
+    data(9)  	= negUpc_0;
+    data(10) 	= negUu_0;
+    data(11) 	= negFy_0;
+    data(12) 	= negFcapFy_0;
+    data(13) 	= negResF_0;
     data(14) 	= LAMBDA_S;
     data(15) 	= LAMBDA_C;
     data(16) 	= LAMBDA_A;
@@ -904,141 +872,110 @@ int IMKPeakOriented::sendSelf(int cTag, Channel &theChannel)
     data(21) 	= c_K;
     data(22) 	= D_pos;
     data(23) 	= D_neg;
-    data(24) 	= Ui;
-    data(25) 	= Fi;
-    data(26) 	= Ui_1;
-    data(27) 	= Fi_1;
-    data(28) 	= du_i_1;
-
-    data(29) 	= posUy;
-    data(30) 	= posUcap;
-    data(31) 	= posFy;
-    data(32) 	= posFcap;
-    data(33) 	= posUglobal;
-    data(34) 	= posFglobal;
-    data(35) 	= posUres;
-    data(36) 	= posFres;
-    data(37) 	= posKp;
-    data(38) 	= posKpc;
-
-    data(39) 	= negUy;
-    data(40) 	= negUcap;
-    data(41) 	= negFy;
-    data(42) 	= negFcap;
-    data(43) 	= negUglobal;
-    data(44) 	= negFglobal;
-    data(45) 	= negUres;
-    data(46) 	= negFres;
-    data(47) 	= negKp;
-    data(48) 	= negKpc;
-
-    data(49) 	= K_unload;
-
-    data(50) 	= Failure_Flag;
-    data(51) 	= Excursion_Flag;
-    data(52) 	= Branch;
-    data(53) 	= exBranch;
-    // data(54) 	= TargetPeak_Flag;
-    data(55) 	= Yield_Flag;
-
-    data(56) 	= engAcml;
-    data(57) 	= engDspt;
-
-    data(58) 	= u0;
-    data(59) 	= dU;
-    data(60) 	= dF;
-
-    data(61) 	= FailS;
-    data(62) 	= FailC;
-    data(63) 	= FailA;
-    data(64) 	= FailK;
-
-    data(65)	= Ei;
-    data(66)	= dEi;
-    data(67)	= Epj;
-    data(68)	= EpjK;
-    data(69)	= EiK;
-    data(70)	= c_S;
-    data(71)	= c_C;
-    data(72)	= c_A;
-    data(73)	= c_K;
-    data(74)	= EtS;
-    data(75)	= EtC;
-    data(76)	= EtA;
-    data(77)	= EtK;
-    data(78)	= betaS;
-    data(79)	= betaC;
-    data(80)	= betaA;
-    data(81)	= betaK;
-    data(82)	= sPCsp;
-    data(83)	= sPCpcp;
-
-    data(84)	= TangentK;
-
-    data(85)	= Uy_pos;
-    data(86)	= Ucap_pos;
-    data(87)	= Fcap_pos;
-    data(88)	= Kp_pos;
-    data(89)	= Kpc_pos;
-
-    data(90)	= Uy_neg;
-    data(91)	= Ucap_neg;
-    data(92)	= Fcap_neg;
-    data(93)	= Kp_neg;
-    data(94)	= Kpc_neg;
-
-    data(95)	= cUi;
-    data(96)	= cFi;
-    data(97)	= cUi_1;
-    data(98)	= cFi_1;
-    data(99)	= cdu_i_1;
-
-    data(100)	= cPosUy;
-    data(101)	= cPosUcap;
+// 14 Initial Values 25-38
+    data(25)	= posUy_0;
+    data(26)	= posUcap_0;
+    data(27)	= posFcap_0;
+    data(28)	= posKp_0;
+    data(29)	= posKpc_0;
+    data(30)	= negUy_0;
+    data(31)	= negUcap_0;
+    data(32)	= negFcap_0;
+    data(33)	= negKp_0;
+    data(34)	= negKpc_0;
+    data(35)	= engRefS;
+    data(36)	= engRefC;
+    data(37)	= engRefA;
+    data(38)	= engRefK;
+// 3 State Variables 41-43
+    data(41)    = U;
+    data(42) 	= Ui;
+    data(43) 	= Fi;
+// 3 Stiffness 45-47
+    data(45)	= Ktangent;
+    data(46) 	= Kunload;
+    data(47)    = Kreload;
+// 12 Positive U and F 51-62
+    data(51) 	= posUy;
+    data(52) 	= posFy;
+    data(53) 	= posUcap;
+    data(54) 	= posFcap;
+    data(55) 	= posUlocal;
+    data(56) 	= posFlocal;
+    data(57) 	= posUglobal;
+    data(58) 	= posFglobal;
+    data(59) 	= posUres;
+    data(60) 	= posFres;
+    data(51) 	= posKp;
+    data(62) 	= posKpc;
+// 12 Negative U and F 65-76
+    data(65) 	= negUy;
+    data(66) 	= negFy;
+    data(67) 	= negUcap;
+    data(68) 	= negFcap;
+    data(69) 	= negUlocal;
+    data(70) 	= negFlocal;
+    data(71) 	= negUglobal;
+    data(72) 	= negFglobal;
+    data(73) 	= negUres;
+    data(74) 	= negFres;
+    data(75) 	= negKp;
+    data(76) 	= negKpc;
+// 2 Pinching 77 78
+    // data(77)    = Fpinch;
+    // data(78)    = Upinch;
+// 3 Flag 81-83
+    data(81) 	= Failure_Flag;
+    data(82) 	= Yield_Flag;
+    data(83) 	= Branch;
+// 2 Energy 85-86
+    data(85) 	= engAcml;
+    data(86) 	= engDspt;
+// 3 State Variables 91-93
+    data(91)    = cU;
+    data(92)	= cUi;
+    data(93)	= cFi;
+// 3 Stiffness 95-97
+    data(95)    = cKtangent;
+    data(96)	= cKunload;
+    data(97)	= cKreload;
+// 12 Positive U and F 101-112
+    data(101)	= cPosUy;
     data(102)	= cPosFy;
-    data(103)	= cPosFcap;
-    data(104)	= cPosUglobal;
-    data(105)	= cPosFglobal;
-    data(106)	= cPosUres;
-    data(107)	= cPosFres;
-    data(108)	= cPosKp;
-    data(109)	= cPosKpc;
-
-    data(110)	= cNegUy;
-    data(111)	= cNegUcap;
-    data(112)	= cNegFy;
-    data(113)	= cNegFcap;
-    data(114)	= cNegUglobal;
-    data(115)	= cNegFglobal;
-    data(116)	= cNegUres;
-    data(117)	= cNegFres;
-    data(118)	= cNegKp;
-    data(119)	= cNegKpc;
-
-    data(120)	= cK_unload;
-
-    data(121)	= cPosUlocal;
-    data(122)	= cPosFlocal;
-    data(123)	= cNegUlocal;
-    data(124)	= cNegFlocal;
-
-    data(125)	= cFailure_Flag;
-    data(126)	= cExcursion_Flag;
-    data(127)	= cExBranch;
-    data(128)	= cBranch;
-    // data(129)	= cTargetPeak_Flag;
-    data(130)	= cYield_Flag;
-
-    data(131)	= cK_reload;
-
-    data(132)	= K_local;
-    data(133)	= K_global;
-    // data(134)	= K_check;
-
-    data(135)	= cReversal_Flag;
-    data(136)	= Reversal_Flag;
-
-    res	= theChannel.sendVector(this->getDbTag(), cTag, data);
+    data(103)	= cPosUcap;
+    data(104)	= cPosFcap;
+    data(105)	= cPosUlocal;
+    data(106)	= cPosFlocal;
+    data(107)	= cPosUglobal;
+    data(108)	= cPosFglobal;
+    data(109)	= cPosUres;
+    data(110)	= cPosFres;
+    data(111)	= cPosKp;
+    data(112)	= cPosKpc;
+// 12 Negative U and F 115-126
+    data(115)	= cNegUy;
+    data(116)	= cNegFy;
+    data(117)	= cNegUcap;
+    data(118)	= cNegFcap;
+    data(119)	= cNegUlocal;
+    data(120)	= cNegFlocal;
+    data(121)	= cNegUglobal;
+    data(122)	= cNegFglobal;
+    data(123)	= cNegUres;
+    data(124)	= cNegFres;
+    data(125)	= cNegKp;
+    data(126)	= cNegKpc;
+// 2 Pinching 127 128
+    // data(127)   = cFpinch;
+    // data(128)   = cUpinch;
+// 3 Flag 131-133
+    data(131)	= cFailure_Flag;
+    data(132)	= cYield_Flag;
+    data(133)	= cBranch;
+// 2 Energy 135-136
+    data(135)   = cEngAcml;
+    data(136)   = cEngDspt;
+    res = theChannel.sendVector(this->getDbTag(), cTag, data);
     if (res < 0)
         opserr << "IMKPeakOriented::sendSelf() - failed to send data\n";
 
@@ -1047,9 +984,9 @@ int IMKPeakOriented::sendSelf(int cTag, Channel &theChannel)
 
 int IMKPeakOriented::recvSelf(int cTag, Channel &theChannel, FEM_ObjectBroker &theBroker)
 {
-    int res	= 0;
+    int res = 0;
     static Vector data(137);
-    res	= theChannel.recvVector(this->getDbTag(), cTag, data);
+    res = theChannel.recvVector(this->getDbTag(), cTag, data);
 
     if (res < 0) {
         opserr << "IMKPeakOriented::recvSelf() - failed to receive data\n";
@@ -1058,142 +995,133 @@ int IMKPeakOriented::recvSelf(int cTag, Channel &theChannel, FEM_ObjectBroker &t
     else {
         cout << " recvSelf" << endln;
         this->setTag((int)data(0));
-        Ke					= data(1);
-        Up_pos				= data(2);
-        Upc_pos				= data(3);
-        Uu_pos				= data(4);
-        Fy_pos				= data(5);
-        FcapFy_pos			= data(6);
-        ResF_pos			= data(7);
-        Up_neg				= data(8);
-        Upc_neg				= data(9);
-        Uu_neg				= data(10);
-        Fy_neg				= data(11);
-        FcapFy_neg			= data(12);
-        ResF_neg			= data(13);
-        LAMBDA_S			= data(14);
-        LAMBDA_C			= data(15);
-        LAMBDA_A			= data(16);
-        LAMBDA_K			= data(17);
-        c_S					= data(18);
-        c_C					= data(19);
-        c_A					= data(20);
-        c_K					= data(21);
-        D_pos				= data(22);
-        D_neg				= data(23);
-        Ui					= data(24);
-        Fi					= data(25);
-        Ui_1				= data(26);
-        Fi_1				= data(27);
-        du_i_1				= data(28);
-        posUy				= data(29);
-        posUcap			= data(30);
-        posFy				= data(31);
-        posFcap			= data(32);
-        posUglobal		= data(33);
-        posFglobal		= data(34);
-        posUres			= data(35);
-        posFres			= data(36);
-        posKp				= data(37);
-        posKpc			= data(38);
-        negUy				= data(39);
-        negUcap			= data(40);
-        negFy				= data(41);
-        negFcap			= data(42);
-        negUglobal		= data(43);
-        negFglobal		= data(44);
-        negUres			= data(45);
-        negFres			= data(46);
-        negKp				= data(47);
-        negKpc			= data(48);
-        Failure_Flag		= data(49);
-        Excursion_Flag		= data(50);
-        exBranch			= data(51);
-        Branch				= data(52);
-        // TargetPeak_Flag		= data(53);
-        Yield_Flag			= data(54);
-        K_unload			= data(55);
-        engAcml			= data(56);
-        engDspt			= data(57);
-        u0					= data(58);
-        dU					= data(59);
-        dF					= data(60);
-        FailS				= data(61);
-        FailC				= data(62);
-        FailA				= data(63);
-        FailK				= data(64);
-        Ei					= data(65);
-        dEi					= data(66);
-        Epj					= data(67);
-        EpjK				= data(68);
-        EiK					= data(79);
-        c_S					= data(70);
-        c_C					= data(71);
-        c_A					= data(72);
-        c_K					= data(73);
-        EtS					= data(74);
-        EtC					= data(75);
-        EtA					= data(76);
-        EtK					= data(77);
-        betaS				= data(78);
-        betaC				= data(79);
-        betaA				= data(80);
-        betaK				= data(81);
-        sPCsp				= data(82);
-        sPCpcp				= data(83);
-        TangentK			= data(84);
-        Uy_pos				= data(85);
-        Ucap_pos			= data(86);
-        Fcap_pos			= data(87);
-        Kp_pos				= data(88);
-        Kpc_pos				= data(89);
-        Uy_neg				= data(90);
-        Ucap_neg			= data(91);
-        Fcap_neg			= data(92);
-        Kp_neg				= data(93);
-        Kpc_neg				= data(94);
-        cUi					= data(95);
-        cFi					= data(96);
-        cUi_1				= data(97);
-        cFi_1				= data(98);
-        cdu_i_1				= data(99);
-        cPosUy			= data(100);
-        cPosUcap			= data(101);
+    // 23 Fixed Input Material Parameters
+        Ke				= data(1);
+        posUp_0			= data(2);
+        posUpc_0		= data(3);
+        posUu_0			= data(4);
+        posFy_0			= data(5);
+        posFcapFy_0		= data(6);
+        posResF_0		= data(7);
+        negUp_0			= data(8);
+        negUpc_0		= data(9);
+        negUu_0			= data(10);
+        negFy_0			= data(11);
+        negFcapFy_0		= data(12);
+        negResF_0		= data(13);
+        LAMBDA_S		= data(14);
+        LAMBDA_C		= data(15);
+        LAMBDA_A		= data(16);
+        LAMBDA_K		= data(17);
+        c_S				= data(18);
+        c_C				= data(19);
+        c_A				= data(20);
+        c_K				= data(21);
+        D_pos			= data(22);
+        D_neg			= data(23);
+    // 14 Initial Values
+        posUy_0			= data(25);
+        posUcap_0		= data(26);
+        posFcap_0		= data(27);
+        posKp_0			= data(28);
+        posKpc_0		= data(29);
+        negUy_0			= data(30);
+        negUcap_0		= data(31);
+        negFcap_0		= data(32);
+        negKp_0			= data(33);
+        negKpc_0		= data(34);
+        engRefS			= data(35);
+        engRefC			= data(36);
+        engRefA			= data(37);
+        engRefK			= data(38);
+    // 3 State Variables
+        U               = data(41);
+        Ui				= data(42);
+        Fi				= data(43);
+    // 3 Stiffness
+        Ktangent		= data(45);
+        Kunload	    	= data(46);
+        Kreload         = data(47);
+    // 12 Positive U and F
+        posUy			= data(51);
+        posFy			= data(52);
+        posUcap		    = data(53);
+        posFcap		   	= data(54);
+        posUlocal	    = data(55);
+        posFlocal	    = data(56);
+        posUglobal	    = data(57);
+        posFglobal	    = data(58);
+        posUres	    	= data(59);
+        posFres		   	= data(60);
+        posKp			= data(61);
+        posKpc		    = data(62);
+    // 12 Negative U and F
+        negUy			= data(65);
+        negFy			= data(65);
+        negUcap		    = data(67);
+        negFcap		   	= data(68);
+        negUlocal	    = data(69);
+        negFlocal  	    = data(70);
+        negUglobal	    = data(71);
+        negFglobal  	= data(72);
+        negUres		   	= data(73);
+        negFres		    = data(74);
+        negKp			= data(75);
+        negKpc		    = data(76);
+    // 2 Pinching
+        // Fpinch          = data(77);
+        // Upinch          = data(78);
+    // 3 Flag
+        Failure_Flag	= data(81);
+        Yield_Flag		= data(82);
+        Branch			= data(83);
+    // 2 Energy
+        engAcml			= data(85);
+        engDspt		    = data(86);
+    // 3 State Variables
+        cU              = data(91);
+        cUi				= data(92);
+        cFi				= data(93);
+    // 3 Stiffness
+        cKtangent       = data(95);
+        cKunload		= data(96);
+        cKreload   	    = data(97);
+    // 12 Positive U and F
+        cPosUy			= data(101);
         cPosFy			= data(102);
-        cPosFcap			= data(103);
-        cPosUglobal		= data(104);
-        cPosFglobal		= data(105);
-        cPosUres			= data(106);
-        cPosFres			= data(107);
-        cPosKp			= data(108);
-        cPosKpc			= data(109);
-        cNegUy			= data(110);
-        cNegUcap			= data(111);
-        cNegFy			= data(112);
-        cNegFcap			= data(113);
-        cNegUglobal		= data(114);
-        cNegFglobal		= data(115);
-        cNegUres			= data(116);
-        cNegFres			= data(117);
-        cNegKp			= data(118);
-        cNegKpc			= data(119);
-        cK_unload			= data(120);
-        cPosUlocal		= data(121);
-        cPosFlocal		= data(122);
-        cNegUlocal		= data(123);
-        cNegFlocal		= data(124);
-        cFailure_Flag		= data(125);
-        cExcursion_Flag		= data(126);
-        cExBranch			= data(127);
-        cBranch				= data(128);
-        // cTargetPeak_Flag	= data(129);
-        cYield_Flag   		= data(130);
-        cK_reload   		= data(131);
-        K_local				= data(132);
-        K_global			= data(133);
-        // K_check			= data(134);
-        cReversal_Flag	= data(135);
-        Reversal_Flag	= data(136);
+        cPosUcap		= data(103);
+        cPosFcap		= data(104);
+        cPosUlocal		= data(105);
+        cPosFlocal		= data(106);
+        cPosUglobal		= data(107);
+        cPosFglobal		= data(108);
+        cPosUres		= data(109);
+        cPosFres		= data(110);
+        cPosKp			= data(111);
+        cPosKpc			= data(112);
+    // 12 Negative U and F
+        cNegUy			= data(115);
+        cNegFy			= data(116);
+        cNegUcap		= data(117);
+        cNegFcap		= data(118);
+        cNegUlocal		= data(119);
+        cNegFlocal		= data(120);
+        cNegUglobal		= data(121);
+        cNegFglobal		= data(122);
+        cNegUres		= data(123);
+        cNegFres		= data(124);
+        cNegKp			= data(125);
+        cNegKpc			= data(126);
+    // 2 Pinching
+        // cFpinch         = data(127);
+        // cUpinch         = data(128);
+    // 3 Flag
+        cFailure_Flag	= data(131);
+        cYield_Flag   	= data(132);
+        cBranch			= data(133);
+    // 2 Energy
+        cEngAcml        = data(135);
+        cEngDspt        = data(136);
     }
 
     return res;
