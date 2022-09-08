@@ -2696,6 +2696,8 @@ int FSAM::getResponse(int responseID, Information &matInfo)
 		static Vector aux(3);
 		aux.Zero();
 		if (crackA > 0) {
+			// double v2 = std::cos(CCrackingAngles[0]);
+			// double v1 = -std::sin(CCrackingAngles[0]);
 			double v2 = cos(CCrackingAngles[0]);
 			double v1 = -sin(CCrackingAngles[0]);
 			aux(0) += v1 * v1 * CStrainStressConc1(0);
@@ -2703,6 +2705,8 @@ int FSAM::getResponse(int responseID, Information &matInfo)
 			aux(2) += v1 * v2 * CStrainStressConc1(0);
 		}
 		if (crackB > 0) {
+			// double v2 = std::cos(CCrackingAngles[1]);
+			// double v1 = -std::sin(CCrackingAngles[1]);
 			double v2 = cos(CCrackingAngles[1]);
 			double v1 = -sin(CCrackingAngles[1]);
 			aux(0) += v1 * v1 * CStrainStressConc2(0);

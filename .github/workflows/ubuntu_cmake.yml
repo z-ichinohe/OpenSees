@@ -1,0 +1,85 @@
+name: CMake Build on Ubuntu
+env:
+  CMAKE_VERSION: 3.20.1
+  BUILD_TYPE: Release
+
+on:
+  push:
+    paths:
+      - ".github/workflows/ubuntu_cmake.yml"
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: build on Ubuntu
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0       
+      - uses: actions/cache@v2
+        with:
+          path: |
+            ~/.conan
+            build
+          key: ${{ runner.os }}
+      - uses: chetan/git-restore-mtime-action@v1.0
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.9' 
+# Install and Check Library
+      - name: Install Library
+        run: |
+          sudo apt update && sudo apt upgrade -y
+          sudo apt-get install apt-file
+          sudo apt-get install tcl8.6-dev
+          sudo apt-get install tk8.6-dev
+          sudo apt-get update
+          sudo apt-get install liblapack-dev
+          sudo apt-get install libopenmpi-dev
+          # sudo apt-get install openmpi-bin
+          sudo apt-get install libmkl-rt
+          sudo apt-get install libmkl-blacs-openmpi-lp64
+          sudo apt-get install libscalapack-openmpi-dev
+          git clone https://github.com/scivision/mumps.git
+          cd mumps
+          mkdir build
+          cd build
+          cmake .. -Darith=d
+          cmake --build . --config Release --parallel 4
+          cd ..
+          sudo apt-file update
+          pip3 install conan
+      - name: Check Library
+        run: |
+          echo "puts [info tclversion]" | tclsh          
+          cmake --version
+          gfortran --version
+          ompi_info | head
+          python3 --version
+          conan --version
+# Build
+      - name: Build
+        run: |
+          mkdir -p build
+          mkdir -p linux
+          cd build
+          conan install .. --build missing
+          cmake .. -DMUMPS_DIR=$PWD/../../mumps/build -DOPENMPI=TRUE -DSCALAPACK_LIBRARIES="/usr/lib/x86_64-linux-gnu/libmkl_blacs_openmpi_lp64.so;/usr/lib/x86_64-linux-gnu/libscalapack-openmpi.so.2.1"
+          cmake --build . --config Release --target OpenSees
+          cmake --build ./ --config Release --target OpenSeesPy
+          mv ./lib/OpenSeesPy.so ./lib/opensees.so
+          cp ./lib/opensees.so ./../linux/
+          cp ./bin/OpenSees ./../linux/
+# Verification
+      - name: Verification OpenSeesPySP
+        run: |
+          cd ./EXAMPLES/ExamplePython/
+          export PYTHONPATH="../../build/lib/"
+          python3 -c "import sys; print(sys.path)"
+          python3 example_variable_analysis.py
+# Save
+      - uses: actions/upload-artifact@v1
+        with:
+          name: linux-artifact
+          path: ./linux
