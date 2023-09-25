@@ -115,6 +115,8 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
     //state determination algorithm: defines the current force and tangent stiffness
     const double b2 = 3;
     const double b3 = 1;
+    const double kappaD = 0.5;
+    const double kappaF = 0.5;
     const double Ui_1 = Ui;
     const double Fi_1 = Fi;
     U = strain; //set trial displacement
