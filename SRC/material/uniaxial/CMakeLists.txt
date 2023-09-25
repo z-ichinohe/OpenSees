@@ -1,5 +1,5 @@
 #==============================================================================
-# 
+#
 #        OpenSees -- Open System For Earthquake Engineering Simulation
 #                Pacific Earthquake Engineering Research Center
 #
@@ -32,7 +32,8 @@ target_sources(OPS_Material
       ResilienceLow.cpp
       Steel2.cpp
       SteelMPF.cpp
-      SteelDRC.cpp      
+      SteelDRC.cpp
+      TakedaSlip.cpp
       UVCuniaxial.cpp
       UniaxialMaterial.cpp
     PUBLIC
@@ -61,7 +62,8 @@ target_sources(OPS_Material
       ResilienceLow.h
       Steel2.h
       SteelMPF.h
-      SteelDRC.h      
+      SteelDRC.h
+      TakedaSlip.h
       UVCuniaxial.h
       UniaxialMaterial.h
 )
@@ -76,7 +78,7 @@ target_sources(OPS_Material
       Bond_SP01.cpp
       BoucWenMaterial.cpp
       BoucWenOriginal.cpp
-      BoucWenInfill.cpp      
+      BoucWenInfill.cpp
       CFSSSWP.cpp
       CFSWSWP.cpp
       CableMaterial.cpp
@@ -95,7 +97,7 @@ target_sources(OPS_Material
       ConcretewBeta.cpp
       ConcreteZBH_fitted.cpp
       ConcreteZBH_original.cpp
-      ConcreteZBH_smoothed.cpp 
+      ConcreteZBH_smoothed.cpp
       ConfinedConcrete01.cpp
       ContinuumUniaxial.cpp
       CubicSpline.cpp
@@ -144,7 +146,7 @@ target_sources(OPS_Material
       Neoprene.cpp
       OOHystereticMaterial.cpp
       PathIndependentMaterial.cpp
-      PenaltyMaterial.cpp      
+      PenaltyMaterial.cpp
       Pinching4Material.cpp
       PrestressedSteelMaterial.cpp
       RambergOsgoodSteel.cpp
@@ -172,6 +174,7 @@ target_sources(OPS_Material
       SteelECThermal.cpp
       SteelFractureDI.cpp
       SteelMP.cpp
+      TakedaSlip.cpp
       TDConcrete.cpp
       TDConcreteNL.cpp
       TDConcreteEXP.cpp
@@ -186,7 +189,7 @@ target_sources(OPS_Material
       pyUCLA.cpp
       SMAMaterial.cpp
       CoulombDamperMaterial.cpp
-      
+
       TriMatrix.cpp
       DuctileFracture.cpp
 
@@ -198,7 +201,7 @@ target_sources(OPS_Material
       Bond_SP01.h
       BoucWenMaterial.h
       BoucWenOriginal.h
-      BoucWenInfill.h      
+      BoucWenInfill.h
       CFSSSWP.h
       CFSWSWP.h
       CableMaterial.h
@@ -293,6 +296,7 @@ target_sources(OPS_Material
       SteelBRB.h
       SteelECThermal.h
       SteelMP.h
+      TakedaSlip.h
       TDConcrete.h
       TDConcreteNL.h
       TDConcreteEXP.h
