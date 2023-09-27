@@ -29,8 +29,6 @@
 #define TakedaSlip_h
 
 #include <UniaxialMaterial.h>
-#include <array>
-#include <tuple>
 
 class TakedaSlip : public UniaxialMaterial
 {
@@ -54,44 +52,45 @@ public:
     int sendSelf(int commitTag, Channel &theChannel);
     int recvSelf(int commitTag, Channel &theChannel, FEM_ObjectBroker &theBroker);
     void Print(OPS_Stream &s, int flag = 0);
+
+
 protected:
 
 private:
-    std::tuple<int, float, float>Tslip_120(double dy, double dd, int sn, double fc, double dc, double sy, double su, double fy);
-    int ll, cll;
-    double ds, cds;
-    double dd, cdd;
-    double fs, cfs;
-    double ff, cff;
-    double ss, css;
-    std::array<double, 3> s1, cs1;
-    double s2, cs2;
-    double f0, cf0;
-    double f1, cf1;
-    double f2, cf2;
-    double f3, cf3;
-    double d0, cd0;
-    double d1, cd1;
-    double d2, cd2;
-    double d3, cd3;
-    double x0, cx0;
-    double x1, cx1;
-    double x2, cx2;
-    double x3, cx3;
-    std::array<double, 3> fm, cfm;
-    std::array<double, 3> dm, cdm;
-    double xm, cxm;
-    double b2;
-    double b3;
-    double fc;
-    double fy;
-    const double dc;
-    const double dy;
-    const double sc;
-    const double sy;
-    const double su;
+// 7 Fixed input material parameters
+    const double Uc;
+    const double Uy;
+    const double Kc;
+    const double Ky;
+    const double Kp;
     const double b0;
     const double b1;
+// 4 Initial Variables
+    const double posUc, negUc;
+    const double posUy, negUy;
+    const double posFc, negFc;
+    const double posFy, negFy;
+// History Variables
+// 10 U and F
+    double posUlocal, cPosUlocal;
+    double posFlocal, cPosFlocal;
+    double posUglobal, cPosUglobal;
+    double posFglobal, cPosFglobal;
+    double negUlocal, cNegUlocal;
+    double negFlocal, cNegFlocal;
+    double negUglobal, cNegUglobal;
+    double negFglobal, cNegFglobal;
+    double Fpinch, cFpinch;
+    double Upinch, cUpinch;
+// 3 State Variables
+    double U, cU;
+    double Ui, cUi;
+    double Fi, cFi;
+// 2 Stiffness
+    double Kreload, cKreload, KgetTangent;
+    double Kunload, cKunload;
+// 1 Flag
+    int    Branch,         cBranch;
 };
 
 #endif

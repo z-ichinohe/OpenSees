@@ -51,14 +51,14 @@ OPS_TakedaSlip()
     double dData[7];
     int numInt = 1;
 
-    if (OPS_GetIntInput(&numInt, iData) != 0) {
+    if (OPS_GetIntInput(&numInt, iData) != 0)  {
         opserr << "WARNING invalid uniaxialMaterial TakedaSlip tag" << endln;
         return 0;
     }
 
     int numDouble = 7;
 
-    if (OPS_GetDoubleInput(&numDouble, dData) != 0) {
+    if (OPS_GetDoubleInput(&numDouble, dData) != 0)  {
         opserr << "Invalid Args want: uniaxialMaterial TakedaSlip tag?";
         opserr << "Crack_Disp? Yield_Disp?";
         opserr << "Crack_Stiffness? Yield_Stiffness? Plastic_Stiffness?";
@@ -73,7 +73,7 @@ OPS_TakedaSlip()
         dData[2], dData[3], dData[4],
         dData[5], dData[6]);
 
-    if (theMaterial == 0) {
+    if (theMaterial == 0)  {
         opserr << "WARNING could not create uniaxialMaterial of type TakedaSlip Material\n";
         return 0;
     }
@@ -86,8 +86,8 @@ TakedaSlip::TakedaSlip(int tag,
     double p_Kc, double p_Ky, double p_Kp,
     double p_b0, double p_b1)
     :UniaxialMaterial(tag, 0),
-    Uc(p_Uc), Uy(p_Uy),
-    Kc(p_Kc), Ky(p_Ky), Kp(p_Kp),
+    dc(p_Uc), dy(p_Uy),
+    sc(p_Kc), sy(p_Ky), su(p_Kp),
     b0(p_b0), b1(p_b1)
 {
     this->revertToStart();
@@ -95,8 +95,8 @@ TakedaSlip::TakedaSlip(int tag,
 
 TakedaSlip::TakedaSlip()
     :UniaxialMaterial(0, 0),
-    Uc(0), Uy(0),
-    Kc(0), Ky(0), Kp(0),
+    dc(0), dy(0),
+    sc(0), sy(0), su(0),
     b0(0), b1(0)
 {
     this->revertToStart();
@@ -107,355 +107,957 @@ TakedaSlip::~TakedaSlip()
     // does nothing
 }
 
+std::tuple<int, float, float> TakedaSlip::Tslip_120(double dy, double dd, int sn, double fc, double dc, double sy, double su, double fy)
+{
+    int ll;
+    double ss;
+    double ff;
+    if (dy - abs(dd) > 0)  {
+        ll = 2;
+        ss = sy;
+        ff = sn * fc + (dd - sn * dc) * sy;
+        return {ll, ss, ff};
+    } else {
+        ll = 3;
+        ss = su;
+        ff = fy * sn + (dd - dy * sn) * su;
+        return {ll, ss, ff};
+    }
+}
+
 int TakedaSlip::setTrialStrain(double strain, double strainRate)
 {
     //all variables to the last commit
     this->revertToLastCommit();
 
     //state determination algorithm: defines the current force and tangent stiffness
-    const double b2 = 3;
-    const double b3 = 1;
-    const double kappaD = 0.5;
-    const double kappaF = 0.5;
-    const double Ui_1 = Ui;
-    const double Fi_1 = Fi;
-    U = strain; //set trial displacement
-    Ui = U;
-    const double dU = Ui - Ui_1;    // Incremental deformation at current step
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////  MAIN CODE //////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    if (dU == 0) {   // When deformation doesn't change from the last
-        Fi  = Fi_1;
+    const double err = 0.0001;
+    double eu, x, y, et, xf;
+    b2 = 3;
+    b3 = 1;
+    ds = dd;
+    fs = ff;
+    dd = strain;
+    fc = dc * sc;
+    fy = fc + sy * (dy - dc);
+    int is = 1;
+    if (fs < 0)  {
+        is = 2;
+    }
+    int sn = 3 - 2 * is;
+    if (ll == 1)  {
+        if (dc - abs(dd) > 0)  {
+            ff = sc * dd;
+            return 0;
+        } else {
+            fm[1] = fc;
+            fm[2] = -fc;
+            dm[1] = dc;
+            dm[2] = -dc;
+            s1[1] = sc;
+            s1[2] = sc;
+            is = 1;
+            if (dd < 0)  {
+                is = 2;
+            }
+            sn = 3 - 2 * is;
+            std::tuple<int, float, float> llssff = this->Tslip_120(dy, dd, sn, fc, dc, sy, su, fy);
+            ll = std::get<0>(llssff);
+            ss = std::get<1>(llssff);
+            ff = std::get<2>(llssff);
+        }
+    }
+
+    if (ll==2) {
+        if ((dd-ds)*sn >0) {
+            if ( dy-abs(dd) >0) {
+                ff=sn*fc+(dd-sn*dc)*sy;
+                return 0;
+            } else {
+                ll=3;
+                ss=su;
+                ff=fy*sn+(dd-dy*sn)*su;
+                return 0;
+            }
+        } else {
+            fm[is]=fs;
+            dm[is]=ds;
+            s1[is]=(abs(fm[is])+fc)/(abs(dm[is])+dc);
+            eu=b3*fm[is]/dm[is];
+            x0=ds-fs/s1[is];
+            if ( (dd-x0)*sn >=0) {
+                ll=4;
+                ss=s1[is];
+                ff=fm[is]+(dd-dm[is])*s1[is];
+                return 0;
+            } else {
+                // % loop of 430 %%
+                is=3-is;
+                sn=3-2*is;
+                if ( abs(dm[is]) <= dc) {
+                    d0=x0+sn*fc/s1[3-is];
+                    f0=fc*sn;
+                    if ( (d0-dd)*sn >0) {
+                        ll=5;
+                        ff=(dd-x0)*ss;
+                        return 0;
+                    } else {
+                        // % loop of 530 %%
+                        if ((dm[is]*sn <=dc) && (abs(dm[3-is]) <=dy)) {
+                            std::tuple<int, float, float> llssff = this->Tslip_120(dy, dd, sn, fc, dc, sy, su, fy);
+                            ll = std::get<0>(llssff);
+                            ss = std::get<1>(llssff);
+                            ff = std::get<2>(llssff);
+                            return 0;
+                        } else {
+                            fm[is]=fy*sn;
+                            dm[is]=dy*sn;
+                            x0=dy*sn-fy*sn*(dy*sn-d0)/(fy*sn-f0);
+                            if ( (dd-dm[is])*sn >=0) {
+                                std::tuple<int, float, float> llssff = this->Tslip_120(dy, dd, sn, fc, dc, sy, su, fy);
+                                ll = std::get<0>(llssff);
+                                ss = std::get<1>(llssff);
+                                ff = std::get<2>(llssff);
+                                return 0;
+                            } else {
+                                ll=9;
+                                ss=fm[is]/(dm[is]-x0);
+                                ff=ss*(dd-x0);
+                                return 0;
+                            }
+                        }
+                    }
+                } else if ( abs(dm[is]) <= dy) {
+                    x=fm[is]/(dm[is]-x0);
+                    y=fy*sn/(dy*sn-x0);
+                    if (x < y) {
+                        dm[is]=dy*sn;
+                        fm[is]=fy*sn;
+                    }
+                    if ((dd-dm[is])*sn >=0) {
+                        std::tuple<int, float, float> llssff = this->Tslip_120(dy, dd, sn, fc, dc, sy, su, fy);
+                    ll = std::get<0>(llssff);
+                    ss = std::get<1>(llssff);
+                    ff = std::get<2>(llssff);
+                        return 0;
+                    } else {
+                        ll=9;
+                        ss=fm[is]/(dm[is]-x0);
+                        ff=ss*(dd-x0);
+                        return 0;
+                    }
+                } else {
+                    // % loop of 440 %%
+                    x=dm[3-is]-fm[3-is]/s1[3-is];
+                    et=abs(fm[is]/(x-dm[is]))*pow( abs(dm[is]/(x-dm[is])), b2);
+                    eu=fm[is]/dm[is]*b3;
+                    if ( abs(et-eu) < err) {
+                        xm=x0;
+                    } else {
+                        xm=(eu*dm[is]-et*x0-fm[is])/(eu-et);
+                    }
+
+                    if ( (dd-xm)*sn >0) {
+                        if ((dd-dm[is])*sn >=0) {
+                            std::tuple<int, float, float> llssff = this->Tslip_120(dy, dd, sn, fc, dc, sy, su, fy);
+                            ll = std::get<0>(llssff);
+                            ss = std::get<1>(llssff);
+                            ff = std::get<2>(llssff);
+                            return 0;
+                        } else {
+                            ll=7;
+                            eu=fm[is]/dm[is]*b3;
+                            ss=eu;
+                            xf=dm[is]-fm[is]/eu;
+                            x0=xf;
+                            ff=eu*(dd-xf);
+                            return 0;
+                        }
+                    } else {
+                        ll=6;
+                        x=dm[3-is]-fm[3-is]/s1[3-is];
+                        et=abs(fm[is]/(x-dm[is]))*pow( abs(dm[is]/(x-dm[is])), b2);
+                        ss=et;
+                        ff=et*(dd-x0);
+                        return 0;
+                    }
+                }
+            }
+        }
+    }
+
+    // % rule 3 loading on post yielding primary curve %%
+    if ( ll==3) {
+        if ( (dd-ds)*sn >0) {
+            ff=fy*sn+(dd-dy*sn)*su;
+            return 0;
+        } else {
+            s1[is]=pow( (dy/abs(ds)), b0)*(fc+fy)/(dc+dy);
+            fm[is]=fs;
+            dm[is]=ds;
+            eu=b3*fm[is]/dm[is];
+            x0=ds-fs/s1[is];
+            if ( (dd-x0)*sn >=0) {
+                ll=4;
+                ss=s1[is];
+                ff=fm[is]+(dd-dm[is])*s1[is];
+                return 0;
+            } else {
+                // % loop of 430 %%
+                is=3-is;
+                sn=3-2*is;
+                if ( abs(dm[is]) <= dc) {
+                    d0=x0+sn*fc/s1[3-is];
+                    f0=fc*sn;
+                    if ( (d0-dd)*sn >0) {
+                        ll=5;
+                        ff=(dd-x0)*ss;
+                        return 0;
+                    } else {
+                        // % loop of 530 %%
+                        if ( ((dm[is]*sn <=dc) && (abs(dm[3-is]) <=dy))) {
+                            std::tuple<int, float, float> llssff = this->Tslip_120(dy, dd, sn, fc, dc, sy, su, fy);
+                            ll = std::get<0>(llssff);
+                            ss = std::get<1>(llssff);
+                            ff = std::get<2>(llssff);
+                            return 0;
+                        } else {
+                            fm[is]=fy*sn;
+                            dm[is]=dy*sn;
+                            x0=dy*sn-fy*sn*(dy*sn-d0)/(fy*sn-f0);
+                            if ( (dd-dm[is])*sn >=0) {
+                                std::tuple<int, float, float> llssff = this->Tslip_120(dy, dd, sn, fc, dc, sy, su, fy);
+                                ll = std::get<0>(llssff);
+                                ss = std::get<1>(llssff);
+                                ff = std::get<2>(llssff);
+                                return 0;
+                            } else {
+                                ll=9;
+                                ss=fm[is]/(dm[is]-x0);
+                                ff=ss*(dd-x0);
+                                return 0;
+                            }
+                        }
+                    }
+                } else if ( abs(dm[is]) <= dy) {
+                    x=fm[is]/(dm[is]-x0);
+                    y=fy*sn/(dy*sn-x0);
+                    if (x < y) {
+                        dm[is]=dy*sn;
+                        fm[is]=fy*sn;
+                    }
+                    if ((dd-dm[is])*sn >=0) {
+                        std::tuple<int, float, float> llssff = this->Tslip_120(dy, dd, sn, fc, dc, sy, su, fy);
+                        ll = std::get<0>(llssff);
+                        ss = std::get<1>(llssff);
+                        ff = std::get<2>(llssff);
+                        return 0;
+                    } else {
+                        ll=9;
+                        ss=fm[is]/(dm[is]-x0);
+                        ff=ss*(dd-x0);
+                        return 0;
+                    }
+                } else {
+                    // % loop of 440 %%
+                    x=dm[3-is]-fm[3-is]/s1[3-is];
+                    et=abs(fm[is]/(x-dm[is]))*pow( abs(dm[is]/(x-dm[is])), b2);
+                    eu=fm[is]/dm[is]*b3;
+                    if ( abs(et-eu) < err) {
+                        xm=x0;
+                    } else {
+                        xm=(eu*dm[is]-et*x0-fm[is])/(eu-et);
+                    }
+
+                    if ( (dd-xm)*sn >0) {
+                        if ((dd-dm[is])*sn >=0) {
+                            std::tuple<int, float, float> llssff = this->Tslip_120(dy, dd, sn, fc, dc, sy, su, fy);
+                            ll = std::get<0>(llssff);
+                            ss = std::get<1>(llssff);
+                            ff = std::get<2>(llssff);
+                            return 0;
+                        } else {
+                            ll=7;
+                            eu=fm[is]/dm[is]*b3;
+                            ss=eu;
+                            xf=dm[is]-fm[is]/eu;
+                            x0=xf;
+                            ff=eu*(dd-xf);
+                            return 0;
+                        }
+                    } else {
+                        ll=6;
+                        x=dm[3-is]-fm[3-is]/s1[3-is];
+                        et=abs(fm[is]/(x-dm[is]))*pow( abs(dm[is]/(x-dm[is])), b2);
+                        ss=et;
+                        ff=et*(dd-x0);
+                        return 0;
+                    }
+                }
+            }
+        }
+    }
+
+    // % rule 4 unloading from peak (dm,fm) on the primary curve %%
+    if ( ll==4) {
+        if ( (dm[is]-dd)*sn <=0) {
+            std::tuple<int, float, float> llssff = this->Tslip_120(dy, dd, sn, fc, dc, sy, su, fy);
+            ll = std::get<0>(llssff);
+            ss = std::get<1>(llssff);
+            ff = std::get<2>(llssff);
+            return 0;
+        } else {
+            if ( (dd-x0)*sn >0) {
+                ff=fm[is]+(dd-dm[is])*s1[is];
+                return 0;
+            } else {
+                // % loop of 430 %%
+                is=3-is;
+                sn=3-2*is;
+                if ( abs(dm[is]) <= dc) {
+                    d0=x0+sn*fc/s1[3-is];
+                    f0=fc*sn;
+                    if ( (d0-dd)*sn >0) {
+                        ll=5;
+                        ff=(dd-x0)*ss;
+                        return 0;
+                    } else {
+                        // % loop of 530 %%
+                        if ( ((dm[is]*sn <=dc) && (abs(dm[3-is]) <=dy))) {
+                            std::tuple<int, float, float> llssff = this->Tslip_120(dy, dd, sn, fc, dc, sy, su, fy);
+                            ll = std::get<0>(llssff);
+                            ss = std::get<1>(llssff);
+                            ff = std::get<2>(llssff);
+                            return 0;
+                        } else {
+                            fm[is]=fy*sn;
+                            dm[is]=dy*sn;
+                            x0=dy*sn-fy*sn*(dy*sn-d0)/(fy*sn-f0);
+                            if ( (dd-dm[is])*sn >=0) {
+                                std::tuple<int, float, float> llssff = this->Tslip_120(dy, dd, sn, fc, dc, sy, su, fy);
+                                ll = std::get<0>(llssff);
+                                ss = std::get<1>(llssff);
+                                ff = std::get<2>(llssff);
+                                return 0;
+                            } else {
+                                ll=9;
+                                ss=fm[is]/(dm[is]-x0);
+                                ff=ss*(dd-x0);
+                                return 0;
+                            }
+                        }
+                    }
+                } else if ( abs(dm[is]) <= dy) {
+                    x=fm[is]/(dm[is]-x0);
+                    y=fy*sn/(dy*sn-x0);
+                    if (x < y) {
+                        dm[is]=dy*sn;
+                        fm[is]=fy*sn;
+                    }
+                    if ((dd-dm[is])*sn >=0) {
+                        std::tuple<int, float, float> llssff = this->Tslip_120(dy, dd, sn, fc, dc, sy, su, fy);
+                        ll = std::get<0>(llssff);
+                        ss = std::get<1>(llssff);
+                        ff = std::get<2>(llssff);
+                        return 0;
+                    } else {
+                        ll=9;
+                        ss=fm[is]/(dm[is]-x0);
+                        ff=ss*(dd-x0);
+                        return 0;
+                    }
+                } else {
+                    // % loop of 440 %%
+                    x=dm[3-is]-fm[3-is]/s1[3-is];
+                    et=abs(fm[is]/(x-dm[is]))*pow( abs(dm[is]/(x-dm[is])), b2);
+                    eu=fm[is]/dm[is]*b3;
+                    if ( abs(et-eu) < err) {
+                        xm=x0;
+                    } else {
+                        xm=(eu*dm[is]-et*x0-fm[is])/(eu-et);
+                    }
+
+                    if ( (dd-xm)*sn >0) {
+                        if ((dd-dm[is])*sn >=0) {
+                            std::tuple<int, float, float> llssff = this->Tslip_120(dy, dd, sn, fc, dc, sy, su, fy);
+                            ll = std::get<0>(llssff);
+                            ss = std::get<1>(llssff);
+                            ff = std::get<2>(llssff);
+                            return 0;
+                        } else {
+                            ll=7;
+                            eu=fm[is]/dm[is]*b3;
+                            ss=eu;
+                            xf=dm[is]-fm[is]/eu;
+                            x0=xf;
+                            ff=eu*(dd-xf);
+                            return 0;
+                        }
+                    } else {
+                        ll=6;
+                        x=dm[3-is]-fm[3-is]/s1[3-is];
+                        et=abs(fm[is]/(x-dm[is]))*pow( abs(dm[is]/(x-dm[is])), b2);
+                        ss=et;
+                        ff=et*(dd-x0);
+                        return 0;
+                    }
+                }
+            }
+        }
+    }
+
+    // % rule 5 load reversed at zeor-crossing paint (x0,0) withyout %%
+    // % previous cracking in a new direction                        %%
+    if (ll==5) {
+        if ((dd-x0)*sn >0) {
+            if ((d0-dd)*sn >0) {
+                ff=(dd-x0)*ss;
+                return 0;
+            } else {
+                // % loop of 530 %%
+                if ( ((dm[is]*sn <=dc) && (abs(dm[3-is]) <=dy))) {
+                    std::tuple<int, float, float> llssff = this->Tslip_120(dy, dd, sn, fc, dc, sy, su, fy);
+                    ll = std::get<0>(llssff);
+                    ss = std::get<1>(llssff);
+                    ff = std::get<2>(llssff);
+                    return 0;
+                } else {
+                    fm[is]=fc*sn;
+                    dm[is]=dc*sn;
+                    // %x0=dy*sn-fy*sn*(dy*sn-d0)/(fy*sn-f0);%%%%�o������ψʂƙ��f�͂𐳕��̂ǂ�����Ђъ���_�𒴂���܂łЂъ���_���L������悤�ɂ���
+                    if ( (dd-dm[is])*sn >=0) {
+                        std::tuple<int, float, float> llssff = this->Tslip_120(dy, dd, sn, fc, dc, sy, su, fy);
+                        ll = std::get<0>(llssff);
+                        ss = std::get<1>(llssff);
+                        ff = std::get<2>(llssff);
+                        return 0;
+                    } else {
+                        ll=9;
+                        ss=fm[is]/(dm[is]-x0);
+                        ff=ss*(dd-x0);
+                        return 0;
+                    }
+                }
+            }
+        } else {
+            is=3-is;
+            sn=3-2*is;
+            if ( (dm[is]-dd)*sn >0) {
+                ll=4;
+                ss=s1[is];
+                ff=fm[is]+(dd-dm[is])*s1[is];
+                return 0;
+            } else {
+                std::tuple<int, float, float> llssff = this->Tslip_120(dy, dd, sn, fc, dc, sy, su, fy);
+                ll = std::get<0>(llssff);
+                ss = std::get<1>(llssff);
+                ff = std::get<2>(llssff);
+                return 0;
+            }
+        }
+    }
+
+    // % rule 6 reloading with soft spring toward stiffness %%
+    // % changing point xm                                  %%
+    if ( ll==6) {
+        if ( (dd-ds)*sn >0) {
+            if ( (xm-dd)*sn >0) {
+                x=dm[3-is]-fm[3-is]/s1[3-is];
+                et=abs(fm[is]/(x-dm[is]))*pow( abs(dm[is]/(x-dm[is])), b2);
+                ff=et*(dd-x0);
+                return 0;
+            } else {
+                if ( (dd-dm[is])*sn >0) {
+                    ll=3;
+                    ss=su;
+                    ff=fy*sn+(dd-dy*sn)*su;
+                    return 0;
+                } else {
+                    ll=7;
+                    eu=fm[is]/dm[is]*b3;
+                    ss=eu;
+                    xf=dm[is]-fm[is]/eu;
+                    x0=xf;
+                    ff=eu*(dd-xf);
+                    return 0;
+                }
+            }
+        } else {
+            // % loop of 630 %%
+            d1=ds;
+            f1=fs;
+            s2=s1[is]*b1;
+            x1=d1-f1/s2;
+            if ((x1-dd)*sn <0) {
+                ll=8;
+                ss=s2;
+                ff=f1+(dd-d1)*s2;
+                return 0;
+            } else {
+                // % loop of 840 %%
+                x0=x1;
+                is=3-is;
+                sn=3-2*is;
+                if ( abs(dm[is]) >=dy) {
+                    eu=fm[is]/dm[is]*b3;
+                    xf=dm[is]-fm[is]/eu;
+                    xm=x0;
+                    if ((xf-x0)*sn <=0) {
+                        if ( (dd-dm[is])*sn >=0) {
+                            std::tuple<int, float, float> llssff = this->Tslip_120(dy, dd, sn, fc, dc, sy, su, fy);
+                            ll = std::get<0>(llssff);
+                            ss = std::get<1>(llssff);
+                            ff = std::get<2>(llssff);
+                            return 0;
+                        } else {
+                            ll=9;
+                            ss=fm[is]/(dm[is]-x0);
+                            ff=ss*(dd-x0);
+                            return 0;
+                        }
+                    } else {
+                        // % loop of 440 %%
+                        x=dm[3-is]-fm[3-is]/s1[3-is];
+                        et=abs(fm[is]/(x-dm[is]))*pow( abs(dm[is]/(x-dm[is])), b2);
+                        eu=fm[is]/dm[is]*b3;
+                        if ( abs(et-eu) < err) {
+                            xm=x0;
+                        } else {
+                            xm=(eu*dm[is]-et*x0-fm[is])/(eu-et);
+                        }
+
+                        if ( (dd-xm)*sn >0) {
+                            if ((dd-dm[is])*sn >=0) {
+                                std::tuple<int, float, float> llssff = this->Tslip_120(dy, dd, sn, fc, dc, sy, su, fy);
+                                ll = std::get<0>(llssff);
+                                ss = std::get<1>(llssff);
+                                ff = std::get<2>(llssff);
+                                return 0;
+                            } else {
+                                ll=7;
+                                eu=fm[is]/dm[is]*b3;
+                                ss=eu;
+                                xf=dm[is]-fm[is]/eu;
+                                x0=xf;
+                                ff=eu*(dd-xf);
+                                return 0;
+                            }
+                        } else {
+                            ll=6;
+                            x=dm[3-is]-fm[3-is]/s1[3-is];
+                            et=abs(fm[is]/(x-dm[is]))*pow( abs(dm[is]/(x-dm[is])), b2);
+                            ss=et;
+                            ff=et*(dd-x0);
+                            return 0;
+                        }
+                    }
+                } else {
+                    if ( (dd-dm[is])*sn >=0) {
+                        std::tuple<int, float, float> llssff = this->Tslip_120(dy, dd, sn, fc, dc, sy, su, fy);
+                        ll = std::get<0>(llssff);
+                        ss = std::get<1>(llssff);
+                        ff = std::get<2>(llssff);
+                        return 0;
+                    } else {
+                        ll=9;
+                        ss=fm[is]/(dm[is]-x0);
+                        ff=ss*(dd-x0);
+                        return 0;
+                    }
+                }
+            }
+        }
+    }
+
+    // % rule 7 loading with hard spring toward previous yield point %%
+    if (ll==7) {
+        if ((dd-ds)*sn >0) {
+            if ( (dd-dm[is])*sn >=0) {
+                ll=3;
+                ss=su;
+                ff=fy*sn+(dd-dy*sn)*su;
+                return 0;
+            } else {
+                eu=fm[is]/dm[is]*b3;
+                xf=dm[is]-fm[is]/eu;
+                ff=eu*(dd-xf);
+                return 0;
+            }
+        } else {
+            // % loop of 630 %%
+            d1=ds;
+            f1=fs;
+            s2=s1[is]*b1;
+            x1=d1-f1/s2;
+            if ((x1-dd)*sn <0) {
+                ll=8;
+                ss=s2;
+                ff=f1+(dd-d1)*s2;
+                return 0;
+            } else {
+                // % loop of 840 %%
+                x0=x1;
+                is=3-is;
+                sn=3-2*is;
+                if ( abs(dm[is]) >dy) {
+                    eu=fm[is]/dm[is]*b3;
+                    xf=dm[is]-fm[is]/eu;
+                    xm=x0;
+                    if ((xf-x0)*sn <=0) {
+                        if ( (dd-dm[is])*sn >=0) {
+                            std::tuple<int, float, float> llssff = this->Tslip_120(dy, dd, sn, fc, dc, sy, su, fy);
+                            ll = std::get<0>(llssff);
+                            ss = std::get<1>(llssff);
+                            ff = std::get<2>(llssff);
+                            return 0;
+                        } else {
+                            ll=9;
+                            ss=fm[is]/(dm[is]-x0);
+                            ff=ss*(dd-x0);
+                            return 0;
+                        }
+                    } else {
+                        // % loop of 440 %%
+                        x=dm[3-is]-fm[3-is]/s1[3-is];
+                        et=abs(fm[is]/(x-dm[is]))*pow( abs(dm[is]/(x-dm[is])), b2);
+                        eu=fm[is]/dm[is]*b3;
+                        if ( abs(et-eu) < err) {
+                            xm=x0;
+                        } else {
+                            xm=(eu*dm[is]-et*x0-fm[is])/(eu-et);
+                        }
+
+                        if ( (dd-xm)*sn >0) {
+                            if ((dd-dm[is])*sn >=0) {
+                                std::tuple<int, float, float> llssff = this->Tslip_120(dy, dd, sn, fc, dc, sy, su, fy);
+                                ll = std::get<0>(llssff);
+                                ss = std::get<1>(llssff);
+                                ff = std::get<2>(llssff);
+                                return 0;
+                            } else {
+                                ll=7;
+                                eu=fm[is]/dm[is]*b3;
+                                ss=eu;
+                                xf=dm[is]-fm[is]/eu;
+                                x0=xf;
+                                ff=eu*(dd-xf);
+                                return 0;
+                            }
+                        } else {
+                            ll=6;
+                            x=dm[3-is]-fm[3-is]/s1[3-is];
+                            et=abs(fm[is]/(x-dm[is]))*pow( abs(dm[is]/(x-dm[is])), b2);
+                            ss=et;
+                            ff=et*(dd-x0);
+                            return 0;
+                        }
+                    }
+                } else {
+                    if ( (dd-dm[is])*sn >=0) {
+                        std::tuple<int, float, float> llssff = this->Tslip_120(dy, dd, sn, fc, dc, sy, su, fy);
+                        ll = std::get<0>(llssff);
+                        ss = std::get<1>(llssff);
+                        ff = std::get<2>(llssff);
+                        return 0;
+                    } else {
+                        ll=9;
+                        ss=fm[is]/(dm[is]-x0);
+                        ff=ss*(dd-x0);
+                        return 0;
+                    }
+                }
+            }
+        }
+    }
+
+    // % rule 8 unloading from inner peak (d1,f1) %%
+    if ( ll==8) {
+        if ((x1-dd)*sn >=0) {
+            // % loop of 840 %%
+            x0=x1;
+            is=3-is;
+            sn=3-2*is;
+            if ( abs(dm[is]) >dy) {
+                eu=fm[is]/dm[is]*b3;
+                xf=dm[is]-fm[is]/eu;
+                xm=x0;
+                if ((xf-x0)*sn <=0) {
+                    if ( (dd-dm[is])*sn >=0) {
+                        std::tuple<int, float, float> llssff = this->Tslip_120(dy, dd, sn, fc, dc, sy, su, fy);
+                ll = std::get<0>(llssff);
+                ss = std::get<1>(llssff);
+                ff = std::get<2>(llssff);
+                        return 0;
+                    } else {
+                        ll=9;
+                        ss=fm[is]/(dm[is]-x0);
+                        ff=ss*(dd-x0);
+                        return 0;
+                    }
+                } else {
+                    // % loop of 440 %%
+                    x=dm[3-is]-fm[3-is]/s1[3-is];
+                    et=abs(fm[is]/(x-dm[is]))*pow( abs(dm[is]/(x-dm[is])), b2);
+                    eu=fm[is]/dm[is]*b3;
+                    if ( abs(et-eu) < err) {
+                        xm=x0;
+                    } else {
+                        xm=(eu*dm[is]-et*x0-fm[is])/(eu-et);
+                    }
+
+                    if ( (dd-xm)*sn >0) {
+                        if ((dd-dm[is])*sn >=0) {
+                            std::tuple<int, float, float> llssff = this->Tslip_120(dy, dd, sn, fc, dc, sy, su, fy);
+                            ll = std::get<0>(llssff);
+                            ss = std::get<1>(llssff);
+                            ff = std::get<2>(llssff);
+                            return 0;
+                        } else {
+                            ll=7;
+                            eu=fm[is]/dm[is]*b3;
+                            ss=eu;
+                            xf=dm[is]-fm[is]/eu;
+                            x0=xf;
+                            ff=eu*(dd-xf);
+                            return 0;
+                        }
+                    } else {
+                            ll=6;
+                            x=dm[3-is]-fm[3-is]/s1[3-is];
+                            et=abs(fm[is]/(x-dm[is]))*pow( abs(dm[is]/(x-dm[is])), b2);
+                            ss=et;
+                            ff=et*(dd-x0);
+                            return 0;
+                        }
+                    }
+                } else {
+                    if ( (dd-dm[is])*sn >=0) {
+                        std::tuple<int, float, float> llssff = this->Tslip_120(dy, dd, sn, fc, dc, sy, su, fy);
+                        ll = std::get<0>(llssff);
+                        ss = std::get<1>(llssff);
+                        ff = std::get<2>(llssff);
+                        return 0;
+                    } else {
+                        ll=9;
+                        ss=fm[is]/(dm[is]-x0);
+                        ff=ss*(dd-x0);
+                        return 0;
+                    }
+                }
+            } else {
+                if ( (d1-dd)*sn >0) {
+                    ff=f1+(dd-d1)*s2;
+                    return 0;
+                } else {
+                    // % loop of 830 %%
+                    if (abs(dm[is]) >dy) {
+                        if ( (dd-xm)*sn <=0) {
+                            ll=6;
+                            x=dm[3-is]-fm[3-is]/s1[3-is];
+                            et=abs(fm[is]/(x-dm[is]))*pow( abs(dm[is]/(x-dm[is])), b2);
+                            ss=et;
+                            ff=et*(dd-x0);
+                            return 0;
+                        } else {
+                            if ( (dd-dm[is])*sn >=0) {
+                                std::tuple<int, float, float> llssff = this->Tslip_120(dy, dd, sn, fc, dc, sy, su, fy);
+                                ll = std::get<0>(llssff);
+                                ss = std::get<1>(llssff);
+                                ff = std::get<2>(llssff);
+                                return 0;
+                            } else {
+                                ll=9;
+                                ss=fm[is]/(dm[is]-x0);
+                                ff=ss*(dd-x0);
+                                return 0;
+                            }
+                        }
+                    } else {
+                        if ( (dd-dm[is])*sn >=0) {
+                                std::tuple<int, float, float> llssff = this->Tslip_120(dy, dd, sn, fc, dc, sy, su, fy);
+                                ll = std::get<0>(llssff);
+                                ss = std::get<1>(llssff);
+                                ff = std::get<2>(llssff);
+                                return 0;
+                        } else {
+                                ll=9;
+                                ss=fm[is]/(dm[is]-x0);
+                                ff=ss*(dd-x0);
+                                return 0;
+                            }
+                    }
+                }
+        }
+    }
+
+    // % rule 9 reloading toward peak (d2,f2) directly %%
+    if (ll==9) {
+    if ( (dd-ds)*sn >0) {
+            if ( (dd-dm[is])*sn >0) {
+                std::tuple<int, float, float> llssff = this->Tslip_120(dy, dd, sn, fc, dc, sy, su, fy);
+                ll = std::get<0>(llssff);
+                ss = std::get<1>(llssff);
+                ff = std::get<2>(llssff);
+                return 0;
+            } else {
+                ff=ss*(dd-x0);
+                return 0;
+            }
     } else {
-        const bool onBackbone = (Branch > 1);
-    ///////////////////////////////////////////////////////////////////////////////////////////
-    /////////////////// WHEN REVERSAL /////////////////////////////////////////////////
-    ///////////////////////////////////////////////////////////////////////////////////////////
-        if ( (onBackbone && Fi_1*dU < 0) || (onBackbone && Fi_1==0 && Ui_1*dU<=0) ) {
-            Branch          = 1;
-    /////////////////////////// UPDATE PEAK POINTS ////////////////////////////////////////////
-            if ( Fi_1 > 0 ){
-                posUlocal	= Ui_1;           // UPDATE LOCAL
-                posFlocal	= Fi_1;
-                if ( Ui_1 > posUglobal ) {    // UPDATE GLOBAL
-                    posUglobal   	= Ui_1;
-                    posFglobal   	= Fi_1;
-                }
-            } else {
-                negUlocal	= Ui_1;           // UPDATE LOCAL
-                negFlocal	= Fi_1;
-                if ( Ui_1 < negUglobal ) {    // UPDATE GLOBAL
-                    negUglobal   	= Ui_1;
-                    negFglobal   	= Fi_1;
-                }
-            }
-    /////////////////// UPDATE UNLOADING STIFFNESS ////////////////////////////////////////////
-        }
-        Fi	    = Fi_1 + Kunload * dU;
-    ///////////////////////////////////////////////////////////////////////////////////////////
-    /////////////////// WHEN NEW EXCURSION /////////////////////////////////////////////////
-    ///////////////////////////////////////////////////////////////////////////////////////////
-        if (Branch == 1 && Fi_1*Fi <= 0.0) {
-    ////////////////////////// RELOADING TARGET DETERMINATION /////////////////////////////////
-            if (dU > 0) {
-                double u0 	    = Ui_1 - (Fi_1 / Kunload);
-                double Uplstc   = posUglobal    - (posFglobal / Kunload);
-                Upinch          = (1-kappaD)*Uplstc;
-                Fpinch          = kappaF*posFglobal*(Upinch-u0)/(posUglobal-u0);
-                double Kpinch   = Fpinch        / (Upinch       - u0);
-                double Kglobal  = posFglobal    / (posUglobal - u0);
-                double Klocal   = posFlocal     / (posUlocal  - u0);
-                if (u0 < Upinch) {
-                    Branch  = 2;
-                    Kreload = Kpinch;
-                } else  if ( u0 < posUlocal && posFlocal < posFglobal && Klocal > Kglobal) {
-                    Branch  = 3;
-                    Kreload = Klocal;
+            d1=ds;
+            f1=fs;
+            s2=s1[is]*b1;
+            x1=d1-f1/s2;
+            if ( (x1-dd)*sn >=0) {
+                // % loop of 840 %%
+                x0=x1;
+                is=3-is;
+                sn=3-2*is;
+                if ( abs(dm[is]) >dy) {
+                    eu=fm[is]/dm[is]*b3;
+                    xf=dm[is]-fm[is]/eu;
+                    xm=x0;
+                    if ((xf-x0)*sn <=0) {
+                        if ( (dd-dm[is])*sn >=0) {
+                            std::tuple<int, float, float> llssff = this->Tslip_120(dy, dd, sn, fc, dc, sy, su, fy);
+                            ll = std::get<0>(llssff);
+                            ss = std::get<1>(llssff);
+                            ff = std::get<2>(llssff);
+                            return 0;
+                        } else {
+                            ll=9;
+                            ss=fm[is]/(dm[is]-x0);
+                            ff=ss*(dd-x0);
+                            return 0;
+                        }
+                    } else {
+                        // % loop of 440 %%
+                        x=dm[3-is]-fm[3-is]/s1[3-is];
+                        et=abs(fm[is]/(x-dm[is]))*pow( abs(dm[is]/(x-dm[is])), b2);
+                        eu=fm[is]/dm[is]*b3;
+                        if ( abs(et-eu) < err) {
+                            xm=x0;
+                        } else {
+                            xm=(eu*dm[is]-et*x0-fm[is])/(eu-et);
+                        }
+
+                        if ( (dd-xm)*sn >0) {
+                            if ((dd-dm[is])*sn >=0) {
+                                std::tuple<int, float, float> llssff = this->Tslip_120(dy, dd, sn, fc, dc, sy, su, fy);
+                                ll = std::get<0>(llssff);
+                                ss = std::get<1>(llssff);
+                                ff = std::get<2>(llssff);
+                                return 0;
+                            } else {
+                                ll=7;
+                                eu=fm[is]/dm[is]*b3;
+                                ss=eu;
+                                xf=dm[is]-fm[is]/eu;
+                                x0=xf;
+                                ff=eu*(dd-xf);
+                                return 0;
+                            }
+                        } else {
+                            ll=6;
+                            x=dm[3-is]-fm[3-is]/s1[3-is];
+                            et=abs(fm[is]/(x-dm[is]))*pow( abs(dm[is]/(x-dm[is])), b2);
+                            ss=et;
+                            ff=et*(dd-x0);
+                            return 0;
+                        }
+                    }
                 } else {
-                    Branch  = 4;
-                    Kreload = Kglobal;
+                    if ( (dd-dm[is])*sn >=0) {
+                        std::tuple<int, float, float> llssff = this->Tslip_120(dy, dd, sn, fc, dc, sy, su, fy);
+                        ll = std::get<0>(llssff);
+                        ss = std::get<1>(llssff);
+                        ff = std::get<2>(llssff);
+                        return 0;
+                    } else {
+                        ll=9;
+                        ss=fm[is]/(dm[is]-x0);
+                        ff=ss*(dd-x0);
+                        return 0;
+                    }
                 }
-            }
-            else {
-                double u0 	    = Ui_1 - (Fi_1 / Kunload);
-                double Uplstc   = negUglobal    - (negFglobal / Kunload);
-                Upinch          = (1-kappaD)*Uplstc;
-                Fpinch          = kappaF*negFglobal*(Upinch-u0)/(negUglobal-u0);
-                double Kpinch   = Fpinch        / (Upinch       - u0);
-                double Kglobal  = negFglobal    / (negUglobal - u0);
-                double Klocal   = negFlocal     / (negUlocal  - u0);
-                if (u0 > Upinch) {
-                    Branch 	= 12;
-                    Kreload = Kpinch;
-                } else  if ( u0 > negUlocal && negFlocal > negFglobal && Klocal > Kglobal) {
-                    Branch  = 13;
-                    Kreload = Klocal;
-                } else {
-                    Branch  = 14;
-                    Kreload = Kglobal;
-                }
-            }
-         }
-    ///////////////////////////////////////////////////////////////////////////////////////////
-    ///////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////// BRANCH SHIFT CHECK AND TANGENT STIFFNESS UPDATE ////////////////////////
-    ///////////////////////////////////////////////////////////////////////////////////////////
-    ///////////////////////////////////////////////////////////////////////////////////////////
-    //  Branch
-    //      0:  Elastic
-    //      1:  Unloading Branch
-    //      2:  Towards Pinching Point  +
-    //      3:  Towards Local Peak      +
-    //      4:  Towards Global Peak     +
-    //      5:  Towards Yield Point  +
-    //      6:  Plastic Branch         +
-    //      12: Towards Pinching Point  -
-    //      13: Towards Local Peak      -
-    //      14: Towards Global Peak     -
-    //      15: Towards Yield Point  -
-    //      16: Plastic Branch         -
-    // Branch shifting from 2 -> 3 -> 4 -> 5 -> 6 -> 7
-        // int exBranch = Branch;
-        if (Branch == 0 && Ui > posUc) {            // Yield in Positive
-            Branch  = 5;
-        } else if (Branch == 0 && Ui < negUc) {     // Yield in Negative
-            Branch  = 15;
-        } else if (Branch == 1 && Fi_1 > 0 && Ui > posUlocal) {
-            const double Kpinch  = (Fpinch       - posFlocal) / (Upinch      - posUlocal);
-            const double Kglobal = (posFglobal   - posFlocal) / (posUglobal  - posUlocal);
-            if (posUlocal < Upinch && posFlocal < Fpinch && Upinch < posUglobal && Fpinch < posFglobal && Kpinch < Kglobal) {
-                Kreload = Kpinch;
-                Branch  = 2;                        // Pinching Branch
             } else {
-                Kreload = Kglobal;
-                Branch  = 4;                        // Towards Global Peak
-            }
-        } else if (Branch == 1 && Fi_1 < 0 && Ui < negUlocal) {    // Back to Reloading (Negative)
-            const double Kpinch  = (Fpinch       - negFlocal) / (Upinch      - negUlocal);
-            const double Kglobal = (negFglobal   - negFlocal) / (negUglobal  - negUlocal);
-            if (negUglobal < Upinch && negFglobal < Fpinch && Upinch < negUlocal && Fpinch < negFlocal && Kpinch < Kglobal) {
-                Kreload = Kpinch;
-                Branch  = 12;                   // Pinching Branch
-            } else {
-                Kreload = Kglobal;
-                Branch  = 14;                   // Towards Global Peak
+                ll=8;
+                ss=s2;
+                ff=f1+(dd-d1)*s2;
+                return 0;
             }
         }
-    // Positive
-        if (Branch == 2 && Ui > Upinch) {
-            const double Kglobal  = (posFglobal   - Fpinch) / (posUglobal - Upinch);
-            const double Klocal   = (posFlocal    - Fpinch) / (posUlocal  - Upinch);
-            if (Upinch < posUlocal && Fpinch < posFlocal && posFlocal < posFglobal && Klocal > Kglobal) {
-                Kreload = Klocal;
-                Branch  = 3;
-            } else {
-                Kreload = Kglobal;
-                Branch 	= 4;
-            }
-        }
-        if (Branch == 3 && Ui > posUlocal) {
-            Kreload     = (posFglobal - posFlocal) / (posUglobal - posUlocal);
-            Branch      = 4;
-        }
-        if (Branch == 4 && Ui > posUglobal) {
-            Branch 	    = 5;
-        }
-        if (Branch == 5 && Ui > posUy) {
-            Branch 	    = 6;
-        }
-    // Negative
-        if (Branch == 12 && Ui < Upinch) {
-            double Kglobal  = (negFglobal   - Fpinch) / (negUglobal - Upinch);
-            double Klocal   = (negFlocal    - Fpinch) / (negUlocal  - Upinch);
-            if (negFglobal < negFlocal && negUlocal < Upinch && negFlocal < Fpinch && Klocal > Kglobal) {
-                Kreload = Klocal;
-                Branch  = 13;
-            } else {
-                Kreload = Kglobal;
-                Branch 	= 14;
-            }
-        }
-        if (Branch == 13 && Ui < negUlocal) {
-            Kreload     = (negFglobal - negFlocal) / (negUglobal - negUlocal);
-            Branch      = 14;
-        }
-        if (Branch == 14 && Ui < negUglobal) {
-            Branch 	    = 15;
-        }
-        if (Branch == 15 && Ui < negUy) {
-            Branch 	    = 16;
-        }
-    // Branch Change check
-        // if (Branch!=exBranch) {
-        //     std::cout << exBranch << " -> " << Branch << "\n";
-        // }
-    ///////////////////////////////////////////////////////////////////////////////////////////
-    ///////////////////////////////////////////////////////////////////////////////////////////
-    /////////////////////// COMPUTE FORCE BASED ON BRANCH /////////////////////////////////////
-    ///////////////////////////////////////////////////////////////////////////////////////////
-    ///////////////////////////////////////////////////////////////////////////////////////////
-        if (Branch == 0) {
-            Fi  = Kc*Ui;
-        } else if (Branch == 1) {
-            Fi  = Fi_1 + Kunload*dU;
-    // Positive
-        } else if (Branch == 2) {
-            Fi  = Fpinch    + Kreload*(Ui - Upinch);
-        } else if (Branch == 3) {
-            Fi  = posFlocal + Kreload*(Ui - posUlocal);
-        } else if (Branch == 4) {
-            Fi  = posFglobal + Kreload*(Ui - posUglobal);
-        } else if (Branch == 5) {
-            Fi  = posFy   + Ky*(Ui - posUy);
-        } else if (Branch == 6) {
-            Fi  = posFy   + Kp*(Ui - posUy);
-    // Negative
-        } else if (Branch == 12) {
-            Fi  = Fpinch    + Kreload*(Ui - Upinch);
-        } else if (Branch == 13) {
-            Fi  = negFlocal + Kreload*(Ui - negUlocal);
-        } else if (Branch == 14) {
-            Fi  = negFglobal + Kreload*(Ui - negUglobal);
-        } else if (Branch == 15) {
-            Fi  = negFy   + Ky*(Ui - negUy);
-        } else if (Branch == 16) {
-            Fi  = negFy   + Kp*(Ui - negUy);
-        }
-    ///////////////////////////////////////////////////////////////////////////////////////////
-    ///////////////////////////////////////////////////////////////////////////////////////////
-    // CHECK FOR FAILURE
-    ///////////////////////////////////////////////////////////////////////////////////////////
-    ///////////////////////////////////////////////////////////////////////////////////////////
-        KgetTangent  = (Fi - Fi_1) / dU;
     }
-    if (KgetTangent==0) {
-        KgetTangent  = 1e-6;
-    }
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////// END OF MAIN CODE ///////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    return 0;
 }
 
 double TakedaSlip::getStress(void)
 {
     //cout << " getStress" << endln;
-    return (Fi);
+    return (ff);
 }
 
 double TakedaSlip::getTangent(void)
 {
     //cout << " getTangent" << endln;
-    return (KgetTangent);
+    return (ss);
 }
 
 double TakedaSlip::getInitialTangent(void)
 {
     //cout << " getInitialTangent" << endln;
-    return (Kc);
+    return (sc);
 }
 
 double TakedaSlip::getStrain(void)
 {
     //cout << " getStrain" << endln;
-    return (U);
+    return (dd);
 }
 
 int TakedaSlip::commitState(void)
 {
-    //cout << " commitState" << endln;
-
-    //commit trial  variables
-// 10 Pos U and F
-    cPosUlocal	= posUlocal;
-    cPosFlocal	= posFlocal;
-    cPosUglobal	= posUglobal;
-    cPosFglobal	= posFglobal;
-    cNegUlocal	= negUlocal;
-    cNegFlocal	= negFlocal;
-    cNegUglobal	= negUglobal;
-    cNegFglobal	= negFglobal;
-    cFpinch     = Fpinch;
-    cUpinch     = Upinch;
-// 3 State
-    cU		    = U;
-    cUi	    	= Ui;
-    cFi	        = Fi;
-// 2 Stiffness
-    cKreload	= Kreload;
-    cKunload	= Kunload;
-// 1 Flag
-    cBranch         = Branch;
+    cll = ll;
+    cds = ds;
+    cdd = dd;
+    cfs = fs;
+    cff = ff;
+    css = ss;
+    cf0 = f0;
+    cf1 = f1;
+    cd0 = d0;
+    cd1 = d1;
+    cfm = fm;
+    cdm = dm;
+    cxm = xm;
+    cs1 = s1;
+    cs2 = s2;
     return 0;
 }
 
 int TakedaSlip::revertToLastCommit(void)
 {
-    //cout << " revertToLastCommit" << endln;
-    //the opposite of commit trial history variables
-// 10 Positive U and F
-    posUlocal	    = cPosUlocal;
-    posFlocal	    = cPosFlocal;
-    posUglobal	    = cPosUglobal;
-    posFglobal	    = cPosFglobal;
-    negUlocal	    = cNegUlocal;
-    negFlocal	    = cNegFlocal;
-    negUglobal	    = cNegUglobal;
-    negFglobal	    = cNegFglobal;
-    Fpinch          = cFpinch;
-    Upinch          = cUpinch;
-// 3 State Variables
-    U	            = cU;
-    Ui	            = cUi;
-    Fi	            = cFi;
-// 2 Stiffness
-    Kreload	    = cKreload;
-    Kunload	        = cKunload;
-// 1 Flag
-    Branch          = cBranch;
+    ll = cll;
+    ds = cds;
+    dd = cdd;
+    fs = cfs;
+    ff = cff;
+    ss = css;
+    f0 = cf0;
+    f1 = cf1;
+    d0 = cd0;
+    d1 = cd1;
+    fm = cfm;
+    dm = cdm;
+    xm = cxm;
+    s1 = cs1;
+    s2 = cs2;
     return 0;
 }
 
 int TakedaSlip::revertToStart(void)
 {
-    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////\\
-    //////////////////////////////////////////////////////////////////// ONE TIME CALCULATIONS ////////////////////////////////////////////////////////////////////\\
-    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////*/
-// 14 Initial Values
-    posUc = Uc;
-    posUy = Uy;
-    posFc = Uc * Kc;
-    posFy = Uc * Kc + (Uy - Uc) * Ky;
-    negUc = -Uc;
-    negUy = -Uy;
-    negFc = - Uc * Kc;
-    negFy = - Uc * Kc - (Uy - Uc) * Ky;
-// 10 U and F
-    posUlocal	= cPosUlocal	= posUc;
-    posFlocal	= cPosFlocal	= posFc;
-    posUglobal	= cPosUglobal	= posUc;
-    posFglobal	= cPosFglobal	= posFc;
-    negUlocal	= cNegUlocal	= -negUc;
-    negFlocal	= cNegFlocal	= -negFc;
-    negUglobal	= cNegUglobal	= -negUc;
-    negFglobal	= cNegFglobal	= -negFc;
-    Fpinch      = cFpinch       = 0.0;
-    Upinch      = cUpinch       = 0.0;
-// 3 State Values
-    U	        = cU	        = 0;
-    Ui      	= cUi 	        = 0;
-    Fi 	        = cFi 	        = 0;
-// 2 Stiffness
-    Kreload	    = cKreload	    = Kc;
-    Kunload	    = cKunload	    = Kc;
-    KgetTangent = Kc;
-// 1 Flag
-    Branch      	= cBranch       = 0;
+    ll = cll = 1;
+    ss = css = sc;
     return 0;
 }
 
@@ -464,51 +1066,40 @@ TakedaSlip::getCopy(void)
 {
     TakedaSlip *theCopy = new TakedaSlip(
         this->getTag(),
-        Uc, Uy,
-        Kc, Ky, Kp,
+        dc, dy,
+        sc, sy, su,
         b0, b1);
-// 10 U and F
-    theCopy->posUlocal = posUlocal;
-    theCopy->posFlocal = posFlocal;
-    theCopy->posUglobal = posUglobal;
-    theCopy->posFglobal = posFglobal;
-    theCopy->negUlocal = negUlocal;
-    theCopy->negFlocal = negFlocal;
-    theCopy->negUglobal = negUglobal;
-    theCopy->negFglobal = negFglobal;
-// 2 Pinching
-    theCopy->Fpinch = Fpinch;
-    theCopy->Upinch = Upinch;
-// 3 State Values
-    theCopy->U = U;
-    theCopy->Ui = Ui;
-    theCopy->Fi = Fi;
-// 2 Stiffness
-    theCopy->Kreload = Kreload;
-    theCopy->Kunload = Kunload;
-// 2 Flag
-    theCopy->Branch = Branch;
-// 10 U and F
-    theCopy->cPosUlocal = cPosUlocal;
-    theCopy->cPosFlocal = cPosFlocal;
-    theCopy->cPosUglobal = cPosUglobal;
-    theCopy->cPosFglobal = cPosFglobal;
-    theCopy->cNegUglobal = cNegUglobal;
-    theCopy->cNegFglobal = cNegFglobal;
-    theCopy->cNegUlocal = cNegUlocal;
-    theCopy->cNegFlocal = cNegFlocal;
-// 3 State
-    theCopy->cU = cU;
-    theCopy->cUi = cUi;
-    theCopy->cFi = cFi;
-// 2 Stiffness
-    theCopy->cKreload = cKreload;
-    theCopy->cKunload = cKunload;
-// 2 Pinching
-    theCopy->cFpinch = cFpinch;
-    theCopy->cUpinch = cUpinch;
-// 2 Flag
-    theCopy->cBranch = cBranch;
+    theCopy->ll = ll;
+    theCopy->ds = ds;
+    theCopy->dd = dd;
+    theCopy->fs = fs;
+    theCopy->ff = ff;
+    theCopy->ss = ss;
+    theCopy->f0 = f0;
+    theCopy->f1 = f1;
+    theCopy->d0 = d0;
+    theCopy->d1 = d1;
+    theCopy->fm = fm;
+    theCopy->dm = dm;
+    theCopy->xm = xm;
+    theCopy->s1 = s1;
+    theCopy->s2 = s2;
+
+    theCopy->cll = cll;
+    theCopy->cds = cds;
+    theCopy->cdd = cdd;
+    theCopy->cfs = cfs;
+    theCopy->cff = cff;
+    theCopy->css = css;
+    theCopy->cf0 = cf0;
+    theCopy->cf1 = cf1;
+    theCopy->cd0 = cd0;
+    theCopy->cd1 = cd1;
+    theCopy->cfm = cfm;
+    theCopy->cdm = cdm;
+    theCopy->cxm = cxm;
+    theCopy->cs1 = cs1;
+    theCopy->cs2 = cs2;
     return theCopy;
 }
 
@@ -519,67 +1110,43 @@ int TakedaSlip::sendSelf(int cTag, Channel &theChannel)
 
     static Vector data(137);
     data(0) = this->getTag();
-// 25 Fixed Input Material Parameters 1-25
-    data(1)  	= Uc;
-    data(2)  	= Uy;
-    data(3)  	= Kc;
-    data(4)  	= Ky;
-    data(5)  	= Kp;
-    data(6)  	= b0;
-    data(7)  	= b1;
-// 14 Initial Values 31-44
-    data(31)	= posUc;
-    data(32)	= posUy;
-    data(33)	= posFc;
-    data(34)	= posFy;
-    data(36)	= negUc;
-    data(37)	= negUy;
-    data(38)	= negFc;
-    data(39)	= negFy;
-// 12 Positive U and F 51-62
-    data(55) 	= posUlocal;
-    data(56) 	= posFlocal;
-    data(57) 	= posUglobal;
-    data(58) 	= posFglobal;
-// 3 State Variables 63-65
-    data(63)    = U;
-    data(64) 	= Ui;
-    data(65) 	= Fi;
-// 2 Stiffness 66 67
-    data(66)	= Kreload;
-    data(67) 	= Kunload;
-// 12 Negative U and F 71-82
-    data(75) 	= negUlocal;
-    data(76) 	= negFlocal;
-    data(77) 	= negUglobal;
-    data(78) 	= negFglobal;
-// 2 Pinching 83 84
-    data(83)    = Fpinch;
-    data(84)    = Upinch;
-// 2 Flag 85 86
-    data(86) 	= Branch;
-// 12 Positive U and F 101-112
-    data(105)	= cPosUlocal;
-    data(106)	= cPosFlocal;
-    data(107)	= cPosUglobal;
-    data(108)	= cPosFglobal;
-// 3 State Variables 113-115
-    data(113)   = cU;
-    data(114)	= cUi;
-    data(115)	= cFi;
-// 2 Stiffness 116 117
-    data(116)   = cKreload;
-    data(117)	= cKunload;
-// 12 Negative U and F 121-132
-    data(125)	= cNegUlocal;
-    data(126)	= cNegFlocal;
-    data(127)	= cNegUglobal;
-    data(128)	= cNegFglobal;
-// 2 Pinching 133 134
-    data(133)   = cFpinch;
-    data(134)   = cUpinch;
-// 2 Flag 135 136
-    data(136)	= cBranch;
+    data(11) = ll;
+    data(12) = ds;
+    data(13) = dd;
+    data(14) = fs;
+    data(15) = ff;
+    data(16) = ss;
+    data(17) = f0;
+    data(18) = f1;
+    data(19) = d0;
+    data(20) = d1;
+    data(21) = fm[1];
+    data(22) = fm[2];
+    data(23) = dm[1];
+    data(24) = dm[2];
+    data(25) = xm;
+    data(26) = s1[1];
+    data(27) = s1[2];
+    data(28) = s2;
+
+    data(111) = cll;
+    data(112) = cds;
+    data(113) = cdd;
+    data(114) = cfs;
+    data(115) = cff;
+    data(116) = css;
+    data(117) = cf0;
+    data(118) = cf1;
+    data(119) = cd0;
+    data(120) = cd1;
+    data(121) = cfm[1];
+    data(122) = cfm[2];
+    data(123) = cdm[1];
+    data(124) = cdm[2];
+    data(125) = cxm;
+    data(126) = cs1[1];
+    data(127) = cs1[2];
+    data(128) = cs2;
     res = theChannel.sendVector(this->getDbTag(), cTag, data);
     if (res < 0)
         opserr << "TakedaSlip::sendSelf() - failed to send data\n";
@@ -599,67 +1166,43 @@ int TakedaSlip::recvSelf(int cTag, Channel &theChannel, FEM_ObjectBroker &theBro
     else {
         cout << " recvSelf" << endln;
         this->setTag((int)data(0));
-    // 25 Fixed Input Material Parameters
-        Uc				= data(1);
-        Uy			= data(2);
-        Kc		= data(3);
-        Ky			= data(4);
-        Kp			= data(5);
-        b0		= data(6);
-        b1		= data(7);
-    // 14 Initial Values
-        posUc			= data(31);
-        posUy		= data(32);
-        posFc		= data(33);
-        posFy			= data(34);
-        negUy			= data(36);
-        negUc		= data(37);
-        negFy		= data(38);
-        negFc			= data(39);
-    // 12 Positive U and F
-        posUlocal	    = data(55);
-        posFlocal	    = data(56);
-        posUglobal	    = data(57);
-        posFglobal	    = data(58);
-    // 3 State Variables
-        U               = data(63);
-        Ui				= data(64);
-        Fi				= data(65);
-    // 2 Stiffness
-        Kreload		= data(66);
-        Kunload	    	= data(67);
-    // 12 Negative U and F
-        negUlocal	    = data(75);
-        negFlocal  	    = data(76);
-        negUglobal	    = data(77);
-        negFglobal  	= data(78);
-    // 2 Pinching
-        Fpinch          = data(83);
-        Upinch          = data(84);
-    // 2 Flag
-        Branch			= data(86);
-    // 12 Positive U and F
-        cPosUlocal		= data(105);
-        cPosFlocal		= data(106);
-        cPosUglobal		= data(107);
-        cPosFglobal		= data(108);
-    // 3 State Variables
-        cU              = data(113);
-        cUi				= data(114);
-        cFi				= data(115);
-    // 2 Stiffness
-        cKreload       = data(116);
-        cKunload		= data(117);
-    // 12 Negative U and F
-        cNegUlocal		= data(125);
-        cNegFlocal		= data(126);
-        cNegUglobal		= data(127);
-        cNegFglobal		= data(128);
-    // 2 Pinching
-        cFpinch         = data(133);
-        cUpinch         = data(134);
-    // 2 Flag
-        cBranch			= data(136);
+        ll = data(11);
+        ds = data(12);
+        dd = data(13);
+        fs = data(14);
+        ff = data(15);
+        ss = data(16);
+        f0 = data(17);
+        f1 = data(18);
+        d0 = data(19);
+        d1 = data(20);
+        fm[1] = data(21);
+        fm[2] = data(22);
+        dm[1] = data(23);
+        dm[2] = data(24);
+        xm = data(25);
+        s1[1] = data(26);
+        s1[2] = data(27);
+        s2 = data(28);
+
+        cll = data(111);
+        cds = data(112);
+        cdd = data(113);
+        cfs = data(114);
+        cff = data(115);
+        css = data(116);
+        cf0 = data(117);
+        cf1 = data(118);
+        cd0 = data(119);
+        cd1 = data(120);
+        cfm[1] = data(121);
+        cfm[2] = data(122);
+        cdm[1] = data(123);
+        cdm[2] = data(124);
+        cxm = data(125);
+        cs1[1] = data(126);
+        cs1[2] = data(127);
+        cs2 = data(128);
     }
 
     return res;

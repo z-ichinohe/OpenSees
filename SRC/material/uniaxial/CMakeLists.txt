@@ -174,7 +174,6 @@ target_sources(OPS_Material
       SteelECThermal.cpp
       SteelFractureDI.cpp
       SteelMP.cpp
-      TakedaSlip.cpp
       TDConcrete.cpp
       TDConcreteNL.cpp
       TDConcreteEXP.cpp
@@ -296,7 +295,6 @@ target_sources(OPS_Material
       SteelBRB.h
       SteelECThermal.h
       SteelMP.h
-      TakedaSlip.h
       TDConcrete.h
       TDConcreteNL.h
       TDConcreteEXP.h
