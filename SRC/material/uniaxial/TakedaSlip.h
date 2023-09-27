@@ -38,7 +38,7 @@ public:
     TakedaSlip(int tag,
         double Uc, double Uy,
         double Kc, double Ky, double Kp,
-        double b0, double b1);
+        double unload_from_global_factor, double unload_from_local_factor);
     TakedaSlip();
     ~TakedaSlip();
     const char *getClassType(void) const { return "TakedaSlip"; };
@@ -57,41 +57,41 @@ public:
 protected:
 
 private:
-    std::tuple<int, float, float>Tslip_120(double dy, double dd, int sn, double fc, double dc, double sy, double su, double fy);
-    int ll, cll;
-    double ds, cds;
-    double dd, cdd;
-    double fs, cfs;
-    double ff, cff;
-    double ss, css;
-    std::array<double, 3> s1, cs1;
-    double s2, cs2;
-    double f0, cf0;
-    double f1, cf1;
+    std::tuple<int, float, float>Tslip_120(double d_yield, double d_new, int sign, double f_crack, double d_crack, double k_yield, double k_plastic, double f_yield);
+    int branch, cbranch;
+    double d_old, cd_old;
+    double d_new, cd_new;
+    double f_old, cf_old;
+    double f_new, cf_new;
+    double k_tangent, ck_tangent;
+    std::array<double, 3> k_unload, ck_unload;
+    double k_local, ck_local;
+    double f_reload, cf_reload;
+    double f_local, cf_local;
     double f2, cf2;
     double f3, cf3;
-    double d0, cd0;
-    double d1, cd1;
+    double d_reload, cd_reload;
+    double d_local, cd_local;
     double d2, cd2;
     double d3, cd3;
-    double x0, cx0;
-    double x1, cx1;
+    double d_zero, cd_zero;
+    double d_zero_local, cd_zero_local;
     double x2, cx2;
     double x3, cx3;
-    std::array<double, 3> fm, cfm;
-    std::array<double, 3> dm, cdm;
-    double xm, cxm;
-    double b2;
-    double b3;
-    double fc;
-    double fy;
-    const double dc;
-    const double dy;
-    const double sc;
-    const double sy;
-    const double su;
-    const double b0;
-    const double b1;
+    std::array<double, 3> f_global, cf_global;
+    std::array<double, 3> d_global, cd_global;
+    double d_pinch, cd_pinch;
+    double k_pinch_factor;
+    double k_global_factor;
+    double f_crack;
+    double f_yield;
+    const double d_crack;
+    const double d_yield;
+    const double k_crack;
+    const double k_yield;
+    const double k_plastic;
+    const double unload_from_global_factor;
+    const double unload_from_local_factor;
 };
 
 #endif
