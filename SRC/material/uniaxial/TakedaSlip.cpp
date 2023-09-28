@@ -132,14 +132,12 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
 
  // state determination algorithm: defines the current force and tangent stiffness
     const double error = 0.0001;
+    const double k_pinch_factor = 3;
+    const double k_global_factor = 1;
     double k_global_from_pinch, k_global, k_toYield, k_pinch, d_zero_from_pinch;
-    k_pinch_factor = 3;
-    k_global_factor = 1;
     d_old = d_new;
     f_old = f_new;
     d_new = strain;
-    f_crack = d_crack * k_crack;
-    f_yield = f_crack + k_yield * (d_yield - d_crack);
     int is = 1;
     if (f_old < 0)  {
         is = 2;
@@ -587,15 +585,15 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
             d_local = d_old;
             f_local = f_old;
             k_local = k_unload[is] * unload_from_local_factor;
-            d_zero_local = d_local - f_local / k_local;
-            if ((d_zero_local - d_new) * sign < 0) {
+            d_zero_from_local = d_local - f_local / k_local;
+            if ((d_zero_from_local - d_new) * sign < 0) {
                 branch = 8;
                 k_tangent = k_local;
                 f_new = f_local + (d_new - d_local) * k_local;
                 return 0;
             } else {
  // % loop of 840 %%
-                d_zero = d_zero_local;
+                d_zero = d_zero_from_local;
                 is = 3 - is;
                 sign = 3 - 2 * is;
                 if (abs(d_global[is]) >= d_yield) {
@@ -688,15 +686,15 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
             d_local = d_old;
             f_local = f_old;
             k_local = k_unload[is] * unload_from_local_factor;
-            d_zero_local = d_local - f_local / k_local;
-            if ((d_zero_local - d_new) * sign < 0) {
+            d_zero_from_local = d_local - f_local / k_local;
+            if ((d_zero_from_local - d_new) * sign < 0) {
                 branch = 8;
                 k_tangent = k_local;
                 f_new = f_local + (d_new - d_local) * k_local;
                 return 0;
             } else {
  // % loop of 840 %%
-                d_zero = d_zero_local;
+                d_zero = d_zero_from_local;
                 is = 3 - is;
                 sign = 3 - 2 * is;
                 if (abs(d_global[is]) > d_yield) {
@@ -772,9 +770,9 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
 
  // % rule 8 unloading from inner peak (d_local,f_local) %%
     if (branch == 8) {
-        if ((d_zero_local - d_new) * sign >= 0) {
+        if ((d_zero_from_local - d_new) * sign >= 0) {
  // % loop of 840 %%
-            d_zero = d_zero_local;
+            d_zero = d_zero_from_local;
             is = 3 - is;
             sign = 3 - 2 * is;
             if (abs(d_global[is]) > d_yield) {
@@ -907,10 +905,10 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
             d_local = d_old;
             f_local = f_old;
             k_local = k_unload[is] * unload_from_local_factor;
-            d_zero_local = d_local - f_local / k_local;
-            if ((d_zero_local - d_new) * sign >= 0) {
+            d_zero_from_local = d_local - f_local / k_local;
+            if ((d_zero_from_local - d_new) * sign >= 0) {
  // % loop of 840 %%
-                d_zero = d_zero_local;
+                d_zero = d_zero_from_local;
                 is = 3 - is;
                 sign = 3 - 2 * is;
                 if (abs(d_global[is]) > d_yield) {
@@ -1058,6 +1056,8 @@ int TakedaSlip::revertToStart(void)
 {
     branch = cbranch = 1;
     k_tangent = ck_tangent = k_crack;
+    f_crack = d_crack * k_crack;
+    f_yield = f_crack + k_yield * (d_yield - d_crack);
     return 0;
 }
 
