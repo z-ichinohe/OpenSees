@@ -57,7 +57,6 @@ public:
 protected:
 
 private:
-    std::tuple<int, float, float>Tslip_120(double d_yield, double d_new, int sign, double f_crack, double d_crack, double k_yield, double k_plastic, double f_yield);
     int branch, cbranch;
     double d_new, cd_new;
     double f_new, cf_new;

@@ -107,24 +107,6 @@ TakedaSlip::~TakedaSlip()
  // does nothing
 }
 
-std::tuple<int, float, float>TakedaSlip::Tslip_120(double d_yield, double d_new, int sign, double f_crack, double d_crack, double k_yield, double k_plastic, double f_yield)
-{
-    int branch;
-    double k_tangent;
-    double f_new;
-    if (d_yield - abs(d_new) > 0)  {
-        branch = 2;
-        k_tangent = k_yield;
-        f_new = sign * f_crack + (d_new - sign * d_crack) * k_yield;
-        return {branch, k_tangent, f_new};
-    } else {
-        branch = 3;
-        k_tangent = k_plastic;
-        f_new = f_yield * sign + (d_new - d_yield * sign) * k_plastic;
-        return {branch, k_tangent, f_new};
-    }
-}
-
 int TakedaSlip::setTrialStrain(double strain, double strainRate)
 {
  // all variables to the last commit
@@ -152,10 +134,14 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
         branch = 2;
     }
 
-    if (branch == 2 && (d_new - d_old) * sign <= 0) {
+    if ((branch == 2 || branch == 3) && (d_new - d_old) * sign <= 0) {
         f_global[is] = f_old;
         d_global[is] = d_old;
-        k_unload[is] = (abs(f_global[is]) + f_crack) / (abs(d_global[is]) + d_crack);
+        if (branch == 2) {
+            k_unload[is] = (abs(f_global[is]) + f_crack) / (abs(d_global[is]) + d_crack);
+        } else {
+            k_unload[is] = pow((d_yield / abs(d_old)), unload_from_global_factor) * (f_crack + f_yield) / (d_crack + d_yield);
+        }
         k_global_from_pinch = k_global_factor * f_global[is] / d_global[is];
         d_zero = d_old - f_old / k_unload[is];
         if ((d_new - d_zero) * sign >= 0) {
@@ -223,75 +209,75 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
     }
 
  // % rule 3 loading on post yielding primary curve %%
-    if (branch == 3 && (d_new - d_old) * sign <= 0) {
-        k_unload[is] = pow((d_yield / abs(d_old)), unload_from_global_factor) * (f_crack + f_yield) / (d_crack + d_yield);
-        f_global[is] = f_old;
-        d_global[is] = d_old;
-        k_global_from_pinch = k_global_factor * f_global[is] / d_global[is];
-        d_zero = d_old - f_old / k_unload[is];
-        if ((d_new - d_zero) * sign >= 0) {
-            branch = 4;
-        } else {
-// % loop of 430 %%
-            is = is == 1 ? 2 : 1;
-            sign = sign == 1 ? -1 : 1;
-            if (abs(d_global[is]) <= d_crack) {
-                d_reload = d_zero + sign * f_crack / k_unload[3 - is];
-                f_reload = f_crack * sign;
-                if ((d_reload - d_new) * sign > 0) {
-                    branch = 5;
-                } else {
-// % loop of 530 %%
-                    if ((d_global[is] * sign <= d_crack) && (abs(d_global[3 - is]) <= d_yield)) {
-                        branch = 2;
-                    } else {
-                        f_global[is] = f_yield * sign;
-                        d_global[is] = d_yield * sign;
-                        d_zero = d_yield * sign - f_yield * sign * (d_yield * sign - d_reload) / (f_yield * sign - f_reload);
-                        if ((d_new - d_global[is]) * sign >= 0) {
-                            branch = 2;
-                        } else {
-                            branch = 9;
-                            k_tangent = f_global[is] / (d_global[is] - d_zero);
-                        }
-                    }
-                }
-            } else if (abs(d_global[is]) <= d_yield) {
-                k_global = f_global[is] / (d_global[is] - d_zero);
-                k_toYield = f_yield * sign / (d_yield * sign - d_zero);
-                if (k_global < k_toYield) {
-                    d_global[is] = d_yield * sign;
-                    f_global[is] = f_yield * sign;
-                }
-                if ((d_new - d_global[is]) * sign >= 0) {
-                    branch = 2;
-                } else {
-                    branch = 9;
-                    k_tangent = f_global[is] / (d_global[is] - d_zero);
-                }
-            } else {
-// % loop of 440 %%
-                k_global = d_global[3 - is] - f_global[3 - is] / k_unload[3 - is];
-                k_pinch = abs(f_global[is] / (k_global - d_global[is])) * pow( abs(d_global[is] / (k_global - d_global[is])), k_pinch_factor);
-                k_global_from_pinch = f_global[is] / d_global[is] * k_global_factor;
-                if (abs(k_pinch - k_global_from_pinch) < error) {
-                    d_pinch = d_zero;
-                } else {
-                    d_pinch = (k_global_from_pinch * d_global[is] - k_pinch * d_zero - f_global[is]) / (k_global_from_pinch - k_pinch);
-                }
+//     if (branch == 3 && (d_new - d_old) * sign <= 0) {
+//         f_global[is] = f_old;
+//         d_global[is] = d_old;
+//         k_unload[is] = pow((d_yield / abs(d_old)), unload_from_global_factor) * (f_crack + f_yield) / (d_crack + d_yield);
+//         k_global_from_pinch = k_global_factor * f_global[is] / d_global[is];
+//         d_zero = d_old - f_old / k_unload[is];
+//         if ((d_new - d_zero) * sign >= 0) {
+//             branch = 4;
+//         } else {
+// // % loop of 430 %%
+//             is = is == 1 ? 2 : 1;
+//             sign = sign == 1 ? -1 : 1;
+//             if (abs(d_global[is]) <= d_crack) {
+//                 d_reload = d_zero + sign * f_crack / k_unload[3 - is];
+//                 f_reload = f_crack * sign;
+//                 if ((d_reload - d_new) * sign > 0) {
+//                     branch = 5;
+//                 } else {
+// // % loop of 530 %%
+//                     if ((d_global[is] * sign <= d_crack) && (abs(d_global[3 - is]) <= d_yield)) {
+//                         branch = 2;
+//                     } else {
+//                         f_global[is] = f_yield * sign;
+//                         d_global[is] = d_yield * sign;
+//                         d_zero = d_yield * sign - f_yield * sign * (d_yield * sign - d_reload) / (f_yield * sign - f_reload);
+//                         if ((d_new - d_global[is]) * sign >= 0) {
+//                             branch = 2;
+//                         } else {
+//                             branch = 9;
+//                             k_tangent = f_global[is] / (d_global[is] - d_zero);
+//                         }
+//                     }
+//                 }
+//             } else if (abs(d_global[is]) <= d_yield) {
+//                 k_global = f_global[is] / (d_global[is] - d_zero);
+//                 k_toYield = f_yield * sign / (d_yield * sign - d_zero);
+//                 if (k_global < k_toYield) {
+//                     d_global[is] = d_yield * sign;
+//                     f_global[is] = f_yield * sign;
+//                 }
+//                 if ((d_new - d_global[is]) * sign >= 0) {
+//                     branch = 2;
+//                 } else {
+//                     branch = 9;
+//                     k_tangent = f_global[is] / (d_global[is] - d_zero);
+//                 }
+//             } else {
+// // % loop of 440 %%
+//                 k_global = d_global[3 - is] - f_global[3 - is] / k_unload[3 - is];
+//                 k_pinch = abs(f_global[is] / (k_global - d_global[is])) * pow( abs(d_global[is] / (k_global - d_global[is])), k_pinch_factor);
+//                 k_global_from_pinch = f_global[is] / d_global[is] * k_global_factor;
+//                 if (abs(k_pinch - k_global_from_pinch) < error) {
+//                     d_pinch = d_zero;
+//                 } else {
+//                     d_pinch = (k_global_from_pinch * d_global[is] - k_pinch * d_zero - f_global[is]) / (k_global_from_pinch - k_pinch);
+//                 }
 
-                if ((d_new - d_pinch) * sign > 0) {
-                    if ((d_new - d_global[is]) * sign >= 0) {
-                        branch = 2;
-                    } else {
-                        branch = 7;
-                    }
-                } else {
-                    branch = 6;
-                }
-            }
-        }
-    }
+//                 if ((d_new - d_pinch) * sign > 0) {
+//                     if ((d_new - d_global[is]) * sign >= 0) {
+//                         branch = 2;
+//                     } else {
+//                         branch = 7;
+//                     }
+//                 } else {
+//                     branch = 6;
+//                 }
+//             }
+//         }
+//     }
 
  // % rule 4 unloading from peak (d_global,f_global) on the primary curve %%
     if (branch == 4) {
@@ -602,11 +588,11 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
 
  // % rule 9 reloading toward peak (d2,f2) directly %%
     if (branch == 9) {
-    if ((d_new - d_old) * sign > 0) {
-        if ((d_new - d_global[is]) * sign > 0) {
-            branch = 2;
-        }
-    } else {
+        if ((d_new - d_old) * sign > 0) {
+            if ((d_new - d_global[is]) * sign > 0) {
+                branch = 2;
+            }
+        } else {
  // % loop of 630 %%
             d_local = d_old;
             f_local = f_old;
