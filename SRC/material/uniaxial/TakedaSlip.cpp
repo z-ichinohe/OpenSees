@@ -142,8 +142,6 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
     int sign = f_old > 0 ? 1 : -1;
     if (branch == 1)  {
         if (d_crack - abs(d_new) > 0)  {
-            f_new = k_crack * d_new;
-
         } else {
             f_global[1] = f_crack;
             f_global[2] = - f_crack;
@@ -153,20 +151,13 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
             k_unload[2] = k_crack;
             is = d_new > 0 ? 1 : 2;
             sign = d_new > 0 ? 1 : -1;
-            std::tuple<int, float, float>llssff = this->Tslip_120(d_yield, d_new, sign, f_crack, d_crack, k_yield, k_plastic, f_yield);
-            branch = std::get<0>(llssff);
-            k_tangent = std::get<1>(llssff);
-            f_new = std::get<2>(llssff);
+            branch = 2;
         }
     }
 
     if (branch == 2) {
         if ((d_new - d_old) * sign > 0) {
-            std::tuple<int, float, float>llssff = this->Tslip_120(d_yield, d_new, sign, f_crack, d_crack, k_yield, k_plastic, f_yield);
-            branch = std::get<0>(llssff);
-            k_tangent = std::get<1>(llssff);
-            f_new = std::get<2>(llssff);
-
+            branch = 2;
         } else {
             f_global[is] = f_old;
             d_global[is] = d_old;
@@ -187,31 +178,19 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
                     f_reload = f_crack * sign;
                     if ((d_reload - d_new) * sign > 0) {
                         branch = 5;
-                        f_new = (d_new - d_zero) * k_tangent;
-
                     } else {
  // % loop of 530 %%
                         if ((d_global[is] * sign <= d_crack) && (abs(d_global[3 - is]) <= d_yield)) {
-                            std::tuple<int, float, float>llssff = this->Tslip_120(d_yield, d_new, sign, f_crack, d_crack, k_yield, k_plastic, f_yield);
-                            branch = std::get<0>(llssff);
-                            k_tangent = std::get<1>(llssff);
-                            f_new = std::get<2>(llssff);
-
+                            branch = 2;
                         } else {
                             f_global[is] = f_yield * sign;
                             d_global[is] = d_yield * sign;
                             d_zero = d_yield * sign - f_yield * sign * (d_yield * sign - d_reload) / (f_yield * sign - f_reload);
                             if ((d_new - d_global[is]) * sign >= 0) {
-                                std::tuple<int, float, float>llssff = this->Tslip_120(d_yield, d_new, sign, f_crack, d_crack, k_yield, k_plastic, f_yield);
-                                branch = std::get<0>(llssff);
-                                k_tangent = std::get<1>(llssff);
-                                f_new = std::get<2>(llssff);
-
+                                branch = 2;
                             } else {
                                 branch = 9;
                                 k_tangent = f_global[is] / (d_global[is] - d_zero);
-                                f_new = k_tangent * (d_new - d_zero);
-
                             }
                         }
                     }
@@ -223,16 +202,10 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
                         f_global[is] = f_yield * sign;
                     }
                     if ((d_new - d_global[is]) * sign >= 0) {
-                        std::tuple<int, float, float>llssff = this->Tslip_120(d_yield, d_new, sign, f_crack, d_crack, k_yield, k_plastic, f_yield);
-                    branch = std::get<0>(llssff);
-                    k_tangent = std::get<1>(llssff);
-                    f_new = std::get<2>(llssff);
-
+                        branch = 2;
                     } else {
                         branch = 9;
                         k_tangent = f_global[is] / (d_global[is] - d_zero);
-                        f_new = k_tangent * (d_new - d_zero);
-
                     }
                 } else {
  // % loop of 440 %%
@@ -247,27 +220,15 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
 
                     if ((d_new - d_pinch) * sign > 0) {
                         if ((d_new - d_global[is]) * sign >= 0) {
-                            std::tuple<int, float, float>llssff = this->Tslip_120(d_yield, d_new, sign, f_crack, d_crack, k_yield, k_plastic, f_yield);
-                            branch = std::get<0>(llssff);
-                            k_tangent = std::get<1>(llssff);
-                            f_new = std::get<2>(llssff);
-
+                            branch = 2;
                         } else {
                             branch = 7;
-                            k_global_from_pinch = f_global[is] / d_global[is] * k_global_factor;
-                            k_tangent = k_global_from_pinch;
-                            d_zero_from_pinch = d_global[is] - f_global[is] / k_global_from_pinch;
-                            d_zero = d_zero_from_pinch;
-                            f_new = k_global_from_pinch * (d_new - d_zero_from_pinch);
-
                         }
                     } else {
                         branch = 6;
                         k_global = d_global[3 - is] - f_global[3 - is] / k_unload[3 - is];
                         k_pinch = abs(f_global[is] / (k_global - d_global[is])) * pow( abs(d_global[is] / (k_global - d_global[is])), k_pinch_factor);
                         k_tangent = k_pinch;
-                        f_new = k_pinch * (d_new - d_zero);
-
                     }
                 }
             }
@@ -277,11 +238,7 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
  // % rule 3 loading on post yielding primary curve %%
     if (branch == 3) {
         if ((d_new - d_old) * sign > 0) {
-            std::tuple<int, float, float>llssff = this->Tslip_120(d_yield, d_new, sign, f_crack, d_crack, k_yield, k_plastic, f_yield);
-            branch = std::get<0>(llssff);
-            k_tangent = std::get<1>(llssff);
-            f_new = std::get<2>(llssff);
-
+            branch = 2;
         } else {
             k_unload[is] = pow((d_yield / abs(d_old)), unload_from_global_factor) * (f_crack + f_yield) / (d_crack + d_yield);
             f_global[is] = f_old;
@@ -302,31 +259,19 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
                     f_reload = f_crack * sign;
                     if ((d_reload - d_new) * sign > 0) {
                         branch = 5;
-                        f_new = (d_new - d_zero) * k_tangent;
-
                     } else {
  // % loop of 530 %%
                         if ((d_global[is] * sign <= d_crack) && (abs(d_global[3 - is]) <= d_yield)) {
-                            std::tuple<int, float, float>llssff = this->Tslip_120(d_yield, d_new, sign, f_crack, d_crack, k_yield, k_plastic, f_yield);
-                            branch = std::get<0>(llssff);
-                            k_tangent = std::get<1>(llssff);
-                            f_new = std::get<2>(llssff);
-
+                            branch = 2;
                         } else {
                             f_global[is] = f_yield * sign;
                             d_global[is] = d_yield * sign;
                             d_zero = d_yield * sign - f_yield * sign * (d_yield * sign - d_reload) / (f_yield * sign - f_reload);
                             if ((d_new - d_global[is]) * sign >= 0) {
-                                std::tuple<int, float, float>llssff = this->Tslip_120(d_yield, d_new, sign, f_crack, d_crack, k_yield, k_plastic, f_yield);
-                                branch = std::get<0>(llssff);
-                                k_tangent = std::get<1>(llssff);
-                                f_new = std::get<2>(llssff);
-
+                                branch = 2;
                             } else {
                                 branch = 9;
                                 k_tangent = f_global[is] / (d_global[is] - d_zero);
-                                f_new = k_tangent * (d_new - d_zero);
-
                             }
                         }
                     }
@@ -338,16 +283,10 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
                         f_global[is] = f_yield * sign;
                     }
                     if ((d_new - d_global[is]) * sign >= 0) {
-                        std::tuple<int, float, float>llssff = this->Tslip_120(d_yield, d_new, sign, f_crack, d_crack, k_yield, k_plastic, f_yield);
-                        branch = std::get<0>(llssff);
-                        k_tangent = std::get<1>(llssff);
-                        f_new = std::get<2>(llssff);
-
+                        branch = 2;
                     } else {
                         branch = 9;
                         k_tangent = f_global[is] / (d_global[is] - d_zero);
-                        f_new = k_tangent * (d_new - d_zero);
-
                     }
                 } else {
  // % loop of 440 %%
@@ -362,27 +301,15 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
 
                     if ((d_new - d_pinch) * sign > 0) {
                         if ((d_new - d_global[is]) * sign >= 0) {
-                            std::tuple<int, float, float>llssff = this->Tslip_120(d_yield, d_new, sign, f_crack, d_crack, k_yield, k_plastic, f_yield);
-                            branch = std::get<0>(llssff);
-                            k_tangent = std::get<1>(llssff);
-                            f_new = std::get<2>(llssff);
-
+                            branch = 2;
                         } else {
                             branch = 7;
-                            k_global_from_pinch = f_global[is] / d_global[is] * k_global_factor;
-                            k_tangent = k_global_from_pinch;
-                            d_zero_from_pinch = d_global[is] - f_global[is] / k_global_from_pinch;
-                            d_zero = d_zero_from_pinch;
-                            f_new = k_global_from_pinch * (d_new - d_zero_from_pinch);
-
                         }
                     } else {
                         branch = 6;
                         k_global = d_global[3 - is] - f_global[3 - is] / k_unload[3 - is];
                         k_pinch = abs(f_global[is] / (k_global - d_global[is])) * pow( abs(d_global[is] / (k_global - d_global[is])), k_pinch_factor);
                         k_tangent = k_pinch;
-                        f_new = k_pinch * (d_new - d_zero);
-
                     }
                 }
             }
@@ -392,17 +319,11 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
  // % rule 4 unloading from peak (d_global,f_global) on the primary curve %%
     if (branch == 4) {
         if ((d_global[is] - d_new) * sign <= 0) {
-            std::tuple<int, float, float>llssff = this->Tslip_120(d_yield, d_new, sign, f_crack, d_crack, k_yield, k_plastic, f_yield);
-            branch = std::get<0>(llssff);
-            k_tangent = std::get<1>(llssff);
-            f_new = std::get<2>(llssff);
-
+            branch = 2;
         } else {
             if ((d_new - d_zero) * sign >= 0) {
                 branch = 4;
                 k_tangent = k_unload[is];
-                f_new = f_global[is] + (d_new - d_global[is]) * k_unload[is];
-
             } else {
  // % loop of 430 %%
                 is = is == 1 ? 2 : 1;
@@ -412,31 +333,19 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
                     f_reload = f_crack * sign;
                     if ((d_reload - d_new) * sign > 0) {
                         branch = 5;
-                        f_new = (d_new - d_zero) * k_tangent;
-
                     } else {
  // % loop of 530 %%
                         if ((d_global[is] * sign <= d_crack) && (abs(d_global[3 - is]) <= d_yield)) {
-                            std::tuple<int, float, float>llssff = this->Tslip_120(d_yield, d_new, sign, f_crack, d_crack, k_yield, k_plastic, f_yield);
-                            branch = std::get<0>(llssff);
-                            k_tangent = std::get<1>(llssff);
-                            f_new = std::get<2>(llssff);
-
+                            branch = 2;
                         } else {
                             f_global[is] = f_yield * sign;
                             d_global[is] = d_yield * sign;
                             d_zero = d_yield * sign - f_yield * sign * (d_yield * sign - d_reload) / (f_yield * sign - f_reload);
                             if ((d_new - d_global[is]) * sign >= 0) {
-                                std::tuple<int, float, float>llssff = this->Tslip_120(d_yield, d_new, sign, f_crack, d_crack, k_yield, k_plastic, f_yield);
-                                branch = std::get<0>(llssff);
-                                k_tangent = std::get<1>(llssff);
-                                f_new = std::get<2>(llssff);
-
+                                branch = 2;
                             } else {
                                 branch = 9;
                                 k_tangent = f_global[is] / (d_global[is] - d_zero);
-                                f_new = k_tangent * (d_new - d_zero);
-
                             }
                         }
                     }
@@ -448,16 +357,10 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
                         f_global[is] = f_yield * sign;
                     }
                     if ((d_new - d_global[is]) * sign >= 0) {
-                        std::tuple<int, float, float>llssff = this->Tslip_120(d_yield, d_new, sign, f_crack, d_crack, k_yield, k_plastic, f_yield);
-                        branch = std::get<0>(llssff);
-                        k_tangent = std::get<1>(llssff);
-                        f_new = std::get<2>(llssff);
-
+                        branch = 2;
                     } else {
                         branch = 9;
                         k_tangent = f_global[is] / (d_global[is] - d_zero);
-                        f_new = k_tangent * (d_new - d_zero);
-
                     }
                 } else {
  // % loop of 440 %%
@@ -472,27 +375,15 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
 
                     if ((d_new - d_pinch) * sign > 0) {
                         if ((d_new - d_global[is]) * sign >= 0) {
-                            std::tuple<int, float, float>llssff = this->Tslip_120(d_yield, d_new, sign, f_crack, d_crack, k_yield, k_plastic, f_yield);
-                            branch = std::get<0>(llssff);
-                            k_tangent = std::get<1>(llssff);
-                            f_new = std::get<2>(llssff);
-
+                            branch = 2;
                         } else {
                             branch = 7;
-                            k_global_from_pinch = f_global[is] / d_global[is] * k_global_factor;
-                            k_tangent = k_global_from_pinch;
-                            d_zero_from_pinch = d_global[is] - f_global[is] / k_global_from_pinch;
-                            d_zero = d_zero_from_pinch;
-                            f_new = k_global_from_pinch * (d_new - d_zero_from_pinch);
-
                         }
                     } else {
                         branch = 6;
                         k_global = d_global[3 - is] - f_global[3 - is] / k_unload[3 - is];
                         k_pinch = abs(f_global[is] / (k_global - d_global[is])) * pow( abs(d_global[is] / (k_global - d_global[is])), k_pinch_factor);
                         k_tangent = k_pinch;
-                        f_new = k_pinch * (d_new - d_zero);
-
                     }
                 }
             }
@@ -504,32 +395,20 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
     if (branch == 5) {
         if ((d_new - d_zero) * sign > 0) {
             if ((d_reload - d_new) * sign > 0) {
-                        branch = 5;
-                f_new = (d_new - d_zero) * k_tangent;
-
+                branch = 5;
             } else {
  // % loop of 530 %%
                 if ((d_global[is] * sign <= d_crack) && (abs(d_global[3 - is]) <= d_yield)) {
-                    std::tuple<int, float, float>llssff = this->Tslip_120(d_yield, d_new, sign, f_crack, d_crack, k_yield, k_plastic, f_yield);
-                    branch = std::get<0>(llssff);
-                    k_tangent = std::get<1>(llssff);
-                    f_new = std::get<2>(llssff);
-
+                    branch = 2;
                 } else {
                     f_global[is] = f_crack * sign;
                     d_global[is] = d_crack * sign;
  // %d_zero = d_yield * sign - f_yield * sign * (d_yield * sign - d_reload) / (f_yield * sign - f_reload);%%%%�o������ψʂƙ��f�͂𐳕��̂ǂ�����Ђъ���_�𒴂���܂łЂъ���_���L������悤�ɂ���
                     if ((d_new - d_global[is]) * sign >= 0) {
-                        std::tuple<int, float, float>llssff = this->Tslip_120(d_yield, d_new, sign, f_crack, d_crack, k_yield, k_plastic, f_yield);
-                        branch = std::get<0>(llssff);
-                        k_tangent = std::get<1>(llssff);
-                        f_new = std::get<2>(llssff);
-
+                        branch = 2;
                     } else {
                         branch = 9;
                         k_tangent = f_global[is] / (d_global[is] - d_zero);
-                        f_new = k_tangent * (d_new - d_zero);
-
                     }
                 }
             }
@@ -539,14 +418,8 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
             if ((d_global[is] - d_new) * sign > 0) {
                 branch = 4;
                 k_tangent = k_unload[is];
-                f_new = f_global[is] + (d_new - d_global[is]) * k_unload[is];
-
             } else {
-                std::tuple<int, float, float>llssff = this->Tslip_120(d_yield, d_new, sign, f_crack, d_crack, k_yield, k_plastic, f_yield);
-                branch = std::get<0>(llssff);
-                k_tangent = std::get<1>(llssff);
-                f_new = std::get<2>(llssff);
-
+                branch = 2;
             }
         }
     }
@@ -558,22 +431,12 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
             if ((d_pinch - d_new) * sign > 0) {
                 k_global = d_global[3 - is] - f_global[3 - is] / k_unload[3 - is];
                 k_pinch = abs(f_global[is] / (k_global - d_global[is])) * pow( abs(d_global[is] / (k_global - d_global[is])), k_pinch_factor);
-                f_new = k_pinch * (d_new - d_zero);
-
             } else {
                 if ((d_new - d_global[is]) * sign > 0) {
                     branch = 3;
                     k_tangent = k_plastic;
-                    f_new = f_yield * sign + (d_new - d_yield * sign) * k_plastic;
-
                 } else {
                     branch = 7;
-                    k_global_from_pinch = f_global[is] / d_global[is] * k_global_factor;
-                    k_tangent = k_global_from_pinch;
-                    d_zero_from_pinch = d_global[is] - f_global[is] / k_global_from_pinch;
-                    d_zero = d_zero_from_pinch;
-                    f_new = k_global_from_pinch * (d_new - d_zero_from_pinch);
-
                 }
             }
         } else {
@@ -585,8 +448,6 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
             if ((d_zero_from_local - d_new) * sign < 0) {
                 branch = 8;
                 k_tangent = k_local;
-                f_new = f_local + (d_new - d_local) * k_local;
-
             } else {
  // % loop of 840 %%
                 d_zero = d_zero_from_local;
@@ -598,16 +459,10 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
                     d_pinch = d_zero;
                     if ((d_zero_from_pinch - d_zero) * sign <= 0) {
                         if ((d_new - d_global[is]) * sign >= 0) {
-                            std::tuple<int, float, float>llssff = this->Tslip_120(d_yield, d_new, sign, f_crack, d_crack, k_yield, k_plastic, f_yield);
-                            branch = std::get<0>(llssff);
-                            k_tangent = std::get<1>(llssff);
-                            f_new = std::get<2>(llssff);
-
+                            branch = 2;
                         } else {
                             branch = 9;
                             k_tangent = f_global[is] / (d_global[is] - d_zero);
-                            f_new = k_tangent * (d_new - d_zero);
-
                         }
                     } else {
  // % loop of 440 %%
@@ -622,41 +477,23 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
 
                         if ((d_new - d_pinch) * sign > 0) {
                             if ((d_new - d_global[is]) * sign >= 0) {
-                                std::tuple<int, float, float>llssff = this->Tslip_120(d_yield, d_new, sign, f_crack, d_crack, k_yield, k_plastic, f_yield);
-                                branch = std::get<0>(llssff);
-                                k_tangent = std::get<1>(llssff);
-                                f_new = std::get<2>(llssff);
-
+                                branch = 2;
                             } else {
                                 branch = 7;
-                                k_global_from_pinch = f_global[is] / d_global[is] * k_global_factor;
-                                k_tangent = k_global_from_pinch;
-                                d_zero_from_pinch = d_global[is] - f_global[is] / k_global_from_pinch;
-                                d_zero = d_zero_from_pinch;
-                                f_new = k_global_from_pinch * (d_new - d_zero_from_pinch);
-
                             }
                         } else {
                             branch = 6;
                             k_global = d_global[3 - is] - f_global[3 - is] / k_unload[3 - is];
                             k_pinch = abs(f_global[is] / (k_global - d_global[is])) * pow( abs(d_global[is] / (k_global - d_global[is])), k_pinch_factor);
                             k_tangent = k_pinch;
-                            f_new = k_pinch * (d_new - d_zero);
-
                         }
                     }
                 } else {
                     if ((d_new - d_global[is]) * sign >= 0) {
-                        std::tuple<int, float, float>llssff = this->Tslip_120(d_yield, d_new, sign, f_crack, d_crack, k_yield, k_plastic, f_yield);
-                        branch = std::get<0>(llssff);
-                        k_tangent = std::get<1>(llssff);
-                        f_new = std::get<2>(llssff);
-
+                        branch = 2;
                     } else {
                         branch = 9;
                         k_tangent = f_global[is] / (d_global[is] - d_zero);
-                        f_new = k_tangent * (d_new - d_zero);
-
                     }
                 }
             }
@@ -669,17 +506,8 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
             if ((d_new - d_global[is]) * sign > 0) {
                 branch = 3;
                 k_tangent = k_plastic;
-                f_new = f_yield * sign + (d_new - d_yield * sign) * k_plastic;
-
             } else {
                 branch = 7;
-                k_global_from_pinch = f_global[is] / d_global[is] * k_global_factor;
-                d_zero_from_pinch = d_global[is] - f_global[is] / k_global_from_pinch;
-                f_new = k_global_from_pinch * (d_new - d_zero_from_pinch);
-// Important Addition
-                k_tangent = k_global_from_pinch;
-                d_zero = d_zero_from_pinch;
-
             }
         } else {
  // % loop of 630 %%
@@ -690,8 +518,6 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
             if ((d_zero_from_local - d_new) * sign < 0) {
                 branch = 8;
                 k_tangent = k_local;
-                f_new = f_local + (d_new - d_local) * k_local;
-
             } else {
  // % loop of 840 %%
                 d_zero = d_zero_from_local;
@@ -703,16 +529,10 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
                     d_pinch = d_zero;
                     if ((d_zero_from_pinch - d_zero) * sign <= 0) {
                         if ((d_new - d_global[is]) * sign >= 0) {
-                            std::tuple<int, float, float>llssff = this->Tslip_120(d_yield, d_new, sign, f_crack, d_crack, k_yield, k_plastic, f_yield);
-                            branch = std::get<0>(llssff);
-                            k_tangent = std::get<1>(llssff);
-                            f_new = std::get<2>(llssff);
-
+                            branch = 2;
                         } else {
                             branch = 9;
                             k_tangent = f_global[is] / (d_global[is] - d_zero);
-                            f_new = k_tangent * (d_new - d_zero);
-
                         }
                     } else {
  // % loop of 440 %%
@@ -727,41 +547,23 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
 
                         if ((d_new - d_pinch) * sign > 0) {
                             if ((d_new - d_global[is]) * sign >= 0) {
-                                std::tuple<int, float, float>llssff = this->Tslip_120(d_yield, d_new, sign, f_crack, d_crack, k_yield, k_plastic, f_yield);
-                                branch = std::get<0>(llssff);
-                                k_tangent = std::get<1>(llssff);
-                                f_new = std::get<2>(llssff);
-
+                                branch = 2;
                             } else {
                                 branch = 7;
-                                k_global_from_pinch = f_global[is] / d_global[is] * k_global_factor;
-                                k_tangent = k_global_from_pinch;
-                                d_zero_from_pinch = d_global[is] - f_global[is] / k_global_from_pinch;
-                                d_zero = d_zero_from_pinch;
-                                f_new = k_global_from_pinch * (d_new - d_zero_from_pinch);
-
                             }
                         } else {
                             branch = 6;
                             k_global = d_global[3 - is] - f_global[3 - is] / k_unload[3 - is];
                             k_pinch = abs(f_global[is] / (k_global - d_global[is])) * pow( abs(d_global[is] / (k_global - d_global[is])), k_pinch_factor);
                             k_tangent = k_pinch;
-                            f_new = k_pinch * (d_new - d_zero);
-
                         }
                     }
                 } else {
                     if ((d_new - d_global[is]) * sign >= 0) {
-                        std::tuple<int, float, float>llssff = this->Tslip_120(d_yield, d_new, sign, f_crack, d_crack, k_yield, k_plastic, f_yield);
-                        branch = std::get<0>(llssff);
-                        k_tangent = std::get<1>(llssff);
-                        f_new = std::get<2>(llssff);
-
+                        branch = 2;
                     } else {
                         branch = 9;
                         k_tangent = f_global[is] / (d_global[is] - d_zero);
-                        f_new = k_tangent * (d_new - d_zero);
-
                     }
                 }
             }
@@ -772,8 +574,6 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
     if (branch == 8) {
         if ((d_zero_from_local - d_new) * sign < 0) {
             if ((d_local - d_new) * sign > 0) {
-                f_new = f_local + (d_new - d_local) * k_local;
-
             } else {
 // % loop of 830 %%
                 if (abs(d_global[is]) > d_yield) {
@@ -782,34 +582,20 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
                         k_global = d_global[3 - is] - f_global[3 - is] / k_unload[3 - is];
                         k_pinch = abs(f_global[is] / (k_global - d_global[is])) * pow( abs(d_global[is] / (k_global - d_global[is])), k_pinch_factor);
                         k_tangent = k_pinch;
-                        f_new = k_pinch * (d_new - d_zero);
-
                     } else {
                         if ((d_new - d_global[is]) * sign >= 0) {
-                            std::tuple<int, float, float>llssff = this->Tslip_120(d_yield, d_new, sign, f_crack, d_crack, k_yield, k_plastic, f_yield);
-                            branch = std::get<0>(llssff);
-                            k_tangent = std::get<1>(llssff);
-                            f_new = std::get<2>(llssff);
-
+                            branch = 2;
                         } else {
                             branch = 9;
                             k_tangent = f_global[is] / (d_global[is] - d_zero);
-                            f_new = k_tangent * (d_new - d_zero);
-
                         }
                     }
                 } else {
                     if ((d_new - d_global[is]) * sign >= 0) {
-                            std::tuple<int, float, float>llssff = this->Tslip_120(d_yield, d_new, sign, f_crack, d_crack, k_yield, k_plastic, f_yield);
-                            branch = std::get<0>(llssff);
-                            k_tangent = std::get<1>(llssff);
-                            f_new = std::get<2>(llssff);
-
+                            branch = 2;
                     } else {
                             branch = 9;
                             k_tangent = f_global[is] / (d_global[is] - d_zero);
-                            f_new = k_tangent * (d_new - d_zero);
-
                         }
                 }
             }
@@ -824,16 +610,10 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
                 d_pinch = d_zero;
                 if ((d_zero_from_pinch - d_zero) * sign <= 0) {
                     if ((d_new - d_global[is]) * sign >= 0) {
-                        std::tuple<int, float, float>llssff = this->Tslip_120(d_yield, d_new, sign, f_crack, d_crack, k_yield, k_plastic, f_yield);
-                        branch = std::get<0>(llssff);
-                        k_tangent = std::get<1>(llssff);
-                        f_new = std::get<2>(llssff);
-
+                        branch = 2;
                     } else {
                         branch = 9;
                         k_tangent = f_global[is] / (d_global[is] - d_zero);
-                        f_new = k_tangent * (d_new - d_zero);
-
                     }
                 } else {
  // % loop of 440 %%
@@ -848,41 +628,23 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
 
                     if ((d_new - d_pinch) * sign > 0) {
                         if ((d_new - d_global[is]) * sign >= 0) {
-                            std::tuple<int, float, float>llssff = this->Tslip_120(d_yield, d_new, sign, f_crack, d_crack, k_yield, k_plastic, f_yield);
-                            branch = std::get<0>(llssff);
-                            k_tangent = std::get<1>(llssff);
-                            f_new = std::get<2>(llssff);
-
+                            branch = 2;
                         } else {
                             branch = 7;
-                            k_global_from_pinch = f_global[is] / d_global[is] * k_global_factor;
-                            k_tangent = k_global_from_pinch;
-                            d_zero_from_pinch = d_global[is] - f_global[is] / k_global_from_pinch;
-                            d_zero = d_zero_from_pinch;
-                            f_new = k_global_from_pinch * (d_new - d_zero_from_pinch);
-
                         }
                     } else {
                         branch = 6;
                         k_global = d_global[3 - is] - f_global[3 - is] / k_unload[3 - is];
                         k_pinch = abs(f_global[is] / (k_global - d_global[is])) * pow( abs(d_global[is] / (k_global - d_global[is])), k_pinch_factor);
                         k_tangent = k_pinch;
-                        f_new = k_pinch * (d_new - d_zero);
-
                     }
                 }
             } else {
                 if ((d_new - d_global[is]) * sign >= 0) {
-                    std::tuple<int, float, float>llssff = this->Tslip_120(d_yield, d_new, sign, f_crack, d_crack, k_yield, k_plastic, f_yield);
-                    branch = std::get<0>(llssff);
-                    k_tangent = std::get<1>(llssff);
-                    f_new = std::get<2>(llssff);
-
+                    branch = 2;
                 } else {
                     branch = 9;
                     k_tangent = f_global[is] / (d_global[is] - d_zero);
-                    f_new = k_tangent * (d_new - d_zero);
-
                 }
             }
         }
@@ -892,11 +654,7 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
     if (branch == 9) {
     if ((d_new - d_old) * sign > 0) {
             if ((d_new - d_global[is]) * sign > 0) {
-                std::tuple<int, float, float>llssff = this->Tslip_120(d_yield, d_new, sign, f_crack, d_crack, k_yield, k_plastic, f_yield);
-                branch = std::get<0>(llssff);
-                k_tangent = std::get<1>(llssff);
-                f_new = std::get<2>(llssff);
-
+                branch = 2;
             } else {
                 f_new = k_tangent * (d_new - d_zero);
 
@@ -910,8 +668,6 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
             if ((d_zero_from_local - d_new) * sign < 0) {
                 branch = 8;
                 k_tangent = k_local;
-                f_new = f_local + (d_new - d_local) * k_local;
-
             } else {
  // % loop of 840 %%
                 d_zero = d_zero_from_local;
@@ -923,16 +679,10 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
                     d_pinch = d_zero;
                     if ((d_zero_from_pinch - d_zero) * sign <= 0) {
                         if ((d_new - d_global[is]) * sign >= 0) {
-                            std::tuple<int, float, float>llssff = this->Tslip_120(d_yield, d_new, sign, f_crack, d_crack, k_yield, k_plastic, f_yield);
-                            branch = std::get<0>(llssff);
-                            k_tangent = std::get<1>(llssff);
-                            f_new = std::get<2>(llssff);
-
+                            branch = 2;
                         } else {
                             branch = 9;
                             k_tangent = f_global[is] / (d_global[is] - d_zero);
-                            f_new = k_tangent * (d_new - d_zero);
-
                         }
                     } else {
  // % loop of 440 %%
@@ -947,41 +697,23 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
 
                         if ((d_new - d_pinch) * sign > 0) {
                             if ((d_new - d_global[is]) * sign >= 0) {
-                                std::tuple<int, float, float>llssff = this->Tslip_120(d_yield, d_new, sign, f_crack, d_crack, k_yield, k_plastic, f_yield);
-                                branch = std::get<0>(llssff);
-                                k_tangent = std::get<1>(llssff);
-                                f_new = std::get<2>(llssff);
-
+                                branch = 2;
                             } else {
                                 branch = 7;
-                                k_global_from_pinch = f_global[is] / d_global[is] * k_global_factor;
-                                k_tangent = k_global_from_pinch;
-                                d_zero_from_pinch = d_global[is] - f_global[is] / k_global_from_pinch;
-                                d_zero = d_zero_from_pinch;
-                                f_new = k_global_from_pinch * (d_new - d_zero_from_pinch);
-
                             }
                         } else {
                             branch = 6;
                             k_global = d_global[3 - is] - f_global[3 - is] / k_unload[3 - is];
                             k_pinch = abs(f_global[is] / (k_global - d_global[is])) * pow( abs(d_global[is] / (k_global - d_global[is])), k_pinch_factor);
                             k_tangent = k_pinch;
-                            f_new = k_pinch * (d_new - d_zero);
-
                         }
                     }
                 } else {
                     if ((d_new - d_global[is]) * sign >= 0) {
-                        std::tuple<int, float, float>llssff = this->Tslip_120(d_yield, d_new, sign, f_crack, d_crack, k_yield, k_plastic, f_yield);
-                        branch = std::get<0>(llssff);
-                        k_tangent = std::get<1>(llssff);
-                        f_new = std::get<2>(llssff);
-
+                        branch = 2;
                     } else {
                         branch = 9;
                         k_tangent = f_global[is] / (d_global[is] - d_zero);
-                        f_new = k_tangent * (d_new - d_zero);
-
                     }
                 }
             }
