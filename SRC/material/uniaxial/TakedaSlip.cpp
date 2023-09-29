@@ -666,10 +666,15 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
     if (branch == 1) {
         f_new = k_crack * d_new;
     } else if (branch == 2 || branch == 3) {
-        std::tuple<int, float, float>llssff = this->Tslip_120(d_yield, d_new, sign, f_crack, d_crack, k_yield, k_plastic, f_yield);
-        branch = std::get<0>(llssff);
-        k_tangent = std::get<1>(llssff);
-        f_new = std::get<2>(llssff);
+        if (d_yield - abs(d_new) > 0)  {
+            branch = 2;
+            k_tangent = k_yield;
+            f_new = sign * f_crack + (d_new - sign * d_crack) * k_yield;
+        } else {
+            branch = 3;
+            k_tangent = k_plastic;
+            f_new = f_yield * sign + (d_new - d_yield * sign) * k_plastic;
+        }
     } else if (branch == 4) {
         k_tangent = k_unload[is];
         f_new = f_global[is] + (d_new - d_global[is]) * k_unload[is];
