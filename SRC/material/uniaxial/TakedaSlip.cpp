@@ -131,19 +131,19 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
     this->revertToLastCommit();
 
  // state determination algorithm: defines the current force and tangent stiffness
+    double k_global_from_pinch, k_global, k_toYield, k_pinch, d_zero_from_pinch;
     const double error = 0.0001;
     const double k_pinch_factor = 3;
     const double k_global_factor = 1;
-    double k_global_from_pinch, k_global, k_toYield, k_pinch, d_zero_from_pinch;
-    d_old = d_new;
-    f_old = f_new;
+    const double d_old = d_new;
+    const double f_old = f_new;
     d_new = strain;
     int is = f_old > 0 ? 1 : 2;
     int sign = f_old > 0 ? 1 : -1;
     if (branch == 1)  {
         if (d_crack - abs(d_new) > 0)  {
             f_new = k_crack * d_new;
-            return 0;
+
         } else {
             f_global[1] = f_crack;
             f_global[2] = - f_crack;
@@ -166,7 +166,7 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
             branch = std::get<0>(llssff);
             k_tangent = std::get<1>(llssff);
             f_new = std::get<2>(llssff);
-            return 0;
+
         } else {
             f_global[is] = f_old;
             d_global[is] = d_old;
@@ -177,7 +177,7 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
                 branch = 4;
                 k_tangent = k_unload[is];
                 f_new = f_global[is] + (d_new - d_global[is]) * k_unload[is];
-                return 0;
+
             } else {
  // % loop of 430 %%
                 is = is == 1 ? 2 : 1;
@@ -188,7 +188,7 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
                     if ((d_reload - d_new) * sign > 0) {
                         branch = 5;
                         f_new = (d_new - d_zero) * k_tangent;
-                        return 0;
+
                     } else {
  // % loop of 530 %%
                         if ((d_global[is] * sign <= d_crack) && (abs(d_global[3 - is]) <= d_yield)) {
@@ -196,7 +196,7 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
                             branch = std::get<0>(llssff);
                             k_tangent = std::get<1>(llssff);
                             f_new = std::get<2>(llssff);
-                            return 0;
+
                         } else {
                             f_global[is] = f_yield * sign;
                             d_global[is] = d_yield * sign;
@@ -206,12 +206,12 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
                                 branch = std::get<0>(llssff);
                                 k_tangent = std::get<1>(llssff);
                                 f_new = std::get<2>(llssff);
-                                return 0;
+
                             } else {
                                 branch = 9;
                                 k_tangent = f_global[is] / (d_global[is] - d_zero);
                                 f_new = k_tangent * (d_new - d_zero);
-                                return 0;
+
                             }
                         }
                     }
@@ -227,12 +227,12 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
                     branch = std::get<0>(llssff);
                     k_tangent = std::get<1>(llssff);
                     f_new = std::get<2>(llssff);
-                        return 0;
+
                     } else {
                         branch = 9;
                         k_tangent = f_global[is] / (d_global[is] - d_zero);
                         f_new = k_tangent * (d_new - d_zero);
-                        return 0;
+
                     }
                 } else {
  // % loop of 440 %%
@@ -251,7 +251,7 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
                             branch = std::get<0>(llssff);
                             k_tangent = std::get<1>(llssff);
                             f_new = std::get<2>(llssff);
-                            return 0;
+
                         } else {
                             branch = 7;
                             k_global_from_pinch = f_global[is] / d_global[is] * k_global_factor;
@@ -259,7 +259,7 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
                             d_zero_from_pinch = d_global[is] - f_global[is] / k_global_from_pinch;
                             d_zero = d_zero_from_pinch;
                             f_new = k_global_from_pinch * (d_new - d_zero_from_pinch);
-                            return 0;
+
                         }
                     } else {
                         branch = 6;
@@ -267,7 +267,7 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
                         k_pinch = abs(f_global[is] / (k_global - d_global[is])) * pow( abs(d_global[is] / (k_global - d_global[is])), k_pinch_factor);
                         k_tangent = k_pinch;
                         f_new = k_pinch * (d_new - d_zero);
-                        return 0;
+
                     }
                 }
             }
@@ -281,7 +281,7 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
             branch = std::get<0>(llssff);
             k_tangent = std::get<1>(llssff);
             f_new = std::get<2>(llssff);
-            return 0;
+
         } else {
             k_unload[is] = pow((d_yield / abs(d_old)), unload_from_global_factor) * (f_crack + f_yield) / (d_crack + d_yield);
             f_global[is] = f_old;
@@ -292,7 +292,7 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
                 branch = 4;
                 k_tangent = k_unload[is];
                 f_new = f_global[is] + (d_new - d_global[is]) * k_unload[is];
-                return 0;
+
             } else {
  // % loop of 430 %%
                 is = is == 1 ? 2 : 1;
@@ -303,7 +303,7 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
                     if ((d_reload - d_new) * sign > 0) {
                         branch = 5;
                         f_new = (d_new - d_zero) * k_tangent;
-                        return 0;
+
                     } else {
  // % loop of 530 %%
                         if ((d_global[is] * sign <= d_crack) && (abs(d_global[3 - is]) <= d_yield)) {
@@ -311,7 +311,7 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
                             branch = std::get<0>(llssff);
                             k_tangent = std::get<1>(llssff);
                             f_new = std::get<2>(llssff);
-                            return 0;
+
                         } else {
                             f_global[is] = f_yield * sign;
                             d_global[is] = d_yield * sign;
@@ -321,12 +321,12 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
                                 branch = std::get<0>(llssff);
                                 k_tangent = std::get<1>(llssff);
                                 f_new = std::get<2>(llssff);
-                                return 0;
+
                             } else {
                                 branch = 9;
                                 k_tangent = f_global[is] / (d_global[is] - d_zero);
                                 f_new = k_tangent * (d_new - d_zero);
-                                return 0;
+
                             }
                         }
                     }
@@ -342,12 +342,12 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
                         branch = std::get<0>(llssff);
                         k_tangent = std::get<1>(llssff);
                         f_new = std::get<2>(llssff);
-                        return 0;
+
                     } else {
                         branch = 9;
                         k_tangent = f_global[is] / (d_global[is] - d_zero);
                         f_new = k_tangent * (d_new - d_zero);
-                        return 0;
+
                     }
                 } else {
  // % loop of 440 %%
@@ -366,7 +366,7 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
                             branch = std::get<0>(llssff);
                             k_tangent = std::get<1>(llssff);
                             f_new = std::get<2>(llssff);
-                            return 0;
+
                         } else {
                             branch = 7;
                             k_global_from_pinch = f_global[is] / d_global[is] * k_global_factor;
@@ -374,7 +374,7 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
                             d_zero_from_pinch = d_global[is] - f_global[is] / k_global_from_pinch;
                             d_zero = d_zero_from_pinch;
                             f_new = k_global_from_pinch * (d_new - d_zero_from_pinch);
-                            return 0;
+
                         }
                     } else {
                         branch = 6;
@@ -382,7 +382,7 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
                         k_pinch = abs(f_global[is] / (k_global - d_global[is])) * pow( abs(d_global[is] / (k_global - d_global[is])), k_pinch_factor);
                         k_tangent = k_pinch;
                         f_new = k_pinch * (d_new - d_zero);
-                        return 0;
+
                     }
                 }
             }
@@ -396,13 +396,13 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
             branch = std::get<0>(llssff);
             k_tangent = std::get<1>(llssff);
             f_new = std::get<2>(llssff);
-            return 0;
+
         } else {
             if ((d_new - d_zero) * sign >= 0) {
                 branch = 4;
                 k_tangent = k_unload[is];
                 f_new = f_global[is] + (d_new - d_global[is]) * k_unload[is];
-                return 0;
+
             } else {
  // % loop of 430 %%
                 is = is == 1 ? 2 : 1;
@@ -413,7 +413,7 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
                     if ((d_reload - d_new) * sign > 0) {
                         branch = 5;
                         f_new = (d_new - d_zero) * k_tangent;
-                        return 0;
+
                     } else {
  // % loop of 530 %%
                         if ((d_global[is] * sign <= d_crack) && (abs(d_global[3 - is]) <= d_yield)) {
@@ -421,7 +421,7 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
                             branch = std::get<0>(llssff);
                             k_tangent = std::get<1>(llssff);
                             f_new = std::get<2>(llssff);
-                            return 0;
+
                         } else {
                             f_global[is] = f_yield * sign;
                             d_global[is] = d_yield * sign;
@@ -431,12 +431,12 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
                                 branch = std::get<0>(llssff);
                                 k_tangent = std::get<1>(llssff);
                                 f_new = std::get<2>(llssff);
-                                return 0;
+
                             } else {
                                 branch = 9;
                                 k_tangent = f_global[is] / (d_global[is] - d_zero);
                                 f_new = k_tangent * (d_new - d_zero);
-                                return 0;
+
                             }
                         }
                     }
@@ -452,12 +452,12 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
                         branch = std::get<0>(llssff);
                         k_tangent = std::get<1>(llssff);
                         f_new = std::get<2>(llssff);
-                        return 0;
+
                     } else {
                         branch = 9;
                         k_tangent = f_global[is] / (d_global[is] - d_zero);
                         f_new = k_tangent * (d_new - d_zero);
-                        return 0;
+
                     }
                 } else {
  // % loop of 440 %%
@@ -476,7 +476,7 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
                             branch = std::get<0>(llssff);
                             k_tangent = std::get<1>(llssff);
                             f_new = std::get<2>(llssff);
-                            return 0;
+
                         } else {
                             branch = 7;
                             k_global_from_pinch = f_global[is] / d_global[is] * k_global_factor;
@@ -484,7 +484,7 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
                             d_zero_from_pinch = d_global[is] - f_global[is] / k_global_from_pinch;
                             d_zero = d_zero_from_pinch;
                             f_new = k_global_from_pinch * (d_new - d_zero_from_pinch);
-                            return 0;
+
                         }
                     } else {
                         branch = 6;
@@ -492,7 +492,7 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
                         k_pinch = abs(f_global[is] / (k_global - d_global[is])) * pow( abs(d_global[is] / (k_global - d_global[is])), k_pinch_factor);
                         k_tangent = k_pinch;
                         f_new = k_pinch * (d_new - d_zero);
-                        return 0;
+
                     }
                 }
             }
@@ -506,7 +506,7 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
             if ((d_reload - d_new) * sign > 0) {
                         branch = 5;
                 f_new = (d_new - d_zero) * k_tangent;
-                return 0;
+
             } else {
  // % loop of 530 %%
                 if ((d_global[is] * sign <= d_crack) && (abs(d_global[3 - is]) <= d_yield)) {
@@ -514,7 +514,7 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
                     branch = std::get<0>(llssff);
                     k_tangent = std::get<1>(llssff);
                     f_new = std::get<2>(llssff);
-                    return 0;
+
                 } else {
                     f_global[is] = f_crack * sign;
                     d_global[is] = d_crack * sign;
@@ -524,12 +524,12 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
                         branch = std::get<0>(llssff);
                         k_tangent = std::get<1>(llssff);
                         f_new = std::get<2>(llssff);
-                        return 0;
+
                     } else {
                         branch = 9;
                         k_tangent = f_global[is] / (d_global[is] - d_zero);
                         f_new = k_tangent * (d_new - d_zero);
-                        return 0;
+
                     }
                 }
             }
@@ -540,13 +540,13 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
                 branch = 4;
                 k_tangent = k_unload[is];
                 f_new = f_global[is] + (d_new - d_global[is]) * k_unload[is];
-                return 0;
+
             } else {
                 std::tuple<int, float, float>llssff = this->Tslip_120(d_yield, d_new, sign, f_crack, d_crack, k_yield, k_plastic, f_yield);
                 branch = std::get<0>(llssff);
                 k_tangent = std::get<1>(llssff);
                 f_new = std::get<2>(llssff);
-                return 0;
+
             }
         }
     }
@@ -559,13 +559,13 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
                 k_global = d_global[3 - is] - f_global[3 - is] / k_unload[3 - is];
                 k_pinch = abs(f_global[is] / (k_global - d_global[is])) * pow( abs(d_global[is] / (k_global - d_global[is])), k_pinch_factor);
                 f_new = k_pinch * (d_new - d_zero);
-                return 0;
+
             } else {
                 if ((d_new - d_global[is]) * sign > 0) {
                     branch = 3;
                     k_tangent = k_plastic;
                     f_new = f_yield * sign + (d_new - d_yield * sign) * k_plastic;
-                    return 0;
+
                 } else {
                     branch = 7;
                     k_global_from_pinch = f_global[is] / d_global[is] * k_global_factor;
@@ -573,7 +573,7 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
                     d_zero_from_pinch = d_global[is] - f_global[is] / k_global_from_pinch;
                     d_zero = d_zero_from_pinch;
                     f_new = k_global_from_pinch * (d_new - d_zero_from_pinch);
-                    return 0;
+
                 }
             }
         } else {
@@ -586,7 +586,7 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
                 branch = 8;
                 k_tangent = k_local;
                 f_new = f_local + (d_new - d_local) * k_local;
-                return 0;
+
             } else {
  // % loop of 840 %%
                 d_zero = d_zero_from_local;
@@ -602,12 +602,12 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
                             branch = std::get<0>(llssff);
                             k_tangent = std::get<1>(llssff);
                             f_new = std::get<2>(llssff);
-                            return 0;
+
                         } else {
                             branch = 9;
                             k_tangent = f_global[is] / (d_global[is] - d_zero);
                             f_new = k_tangent * (d_new - d_zero);
-                            return 0;
+
                         }
                     } else {
  // % loop of 440 %%
@@ -626,7 +626,7 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
                                 branch = std::get<0>(llssff);
                                 k_tangent = std::get<1>(llssff);
                                 f_new = std::get<2>(llssff);
-                                return 0;
+
                             } else {
                                 branch = 7;
                                 k_global_from_pinch = f_global[is] / d_global[is] * k_global_factor;
@@ -634,7 +634,7 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
                                 d_zero_from_pinch = d_global[is] - f_global[is] / k_global_from_pinch;
                                 d_zero = d_zero_from_pinch;
                                 f_new = k_global_from_pinch * (d_new - d_zero_from_pinch);
-                                return 0;
+
                             }
                         } else {
                             branch = 6;
@@ -642,7 +642,7 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
                             k_pinch = abs(f_global[is] / (k_global - d_global[is])) * pow( abs(d_global[is] / (k_global - d_global[is])), k_pinch_factor);
                             k_tangent = k_pinch;
                             f_new = k_pinch * (d_new - d_zero);
-                            return 0;
+
                         }
                     }
                 } else {
@@ -651,12 +651,12 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
                         branch = std::get<0>(llssff);
                         k_tangent = std::get<1>(llssff);
                         f_new = std::get<2>(llssff);
-                        return 0;
+
                     } else {
                         branch = 9;
                         k_tangent = f_global[is] / (d_global[is] - d_zero);
                         f_new = k_tangent * (d_new - d_zero);
-                        return 0;
+
                     }
                 }
             }
@@ -670,7 +670,7 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
                 branch = 3;
                 k_tangent = k_plastic;
                 f_new = f_yield * sign + (d_new - d_yield * sign) * k_plastic;
-                return 0;
+
             } else {
                 branch = 7;
                 k_global_from_pinch = f_global[is] / d_global[is] * k_global_factor;
@@ -679,7 +679,7 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
 // Important Addition
                 k_tangent = k_global_from_pinch;
                 d_zero = d_zero_from_pinch;
-                return 0;
+
             }
         } else {
  // % loop of 630 %%
@@ -691,7 +691,7 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
                 branch = 8;
                 k_tangent = k_local;
                 f_new = f_local + (d_new - d_local) * k_local;
-                return 0;
+
             } else {
  // % loop of 840 %%
                 d_zero = d_zero_from_local;
@@ -707,12 +707,12 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
                             branch = std::get<0>(llssff);
                             k_tangent = std::get<1>(llssff);
                             f_new = std::get<2>(llssff);
-                            return 0;
+
                         } else {
                             branch = 9;
                             k_tangent = f_global[is] / (d_global[is] - d_zero);
                             f_new = k_tangent * (d_new - d_zero);
-                            return 0;
+
                         }
                     } else {
  // % loop of 440 %%
@@ -731,7 +731,7 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
                                 branch = std::get<0>(llssff);
                                 k_tangent = std::get<1>(llssff);
                                 f_new = std::get<2>(llssff);
-                                return 0;
+
                             } else {
                                 branch = 7;
                                 k_global_from_pinch = f_global[is] / d_global[is] * k_global_factor;
@@ -739,7 +739,7 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
                                 d_zero_from_pinch = d_global[is] - f_global[is] / k_global_from_pinch;
                                 d_zero = d_zero_from_pinch;
                                 f_new = k_global_from_pinch * (d_new - d_zero_from_pinch);
-                                return 0;
+
                             }
                         } else {
                             branch = 6;
@@ -747,7 +747,7 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
                             k_pinch = abs(f_global[is] / (k_global - d_global[is])) * pow( abs(d_global[is] / (k_global - d_global[is])), k_pinch_factor);
                             k_tangent = k_pinch;
                             f_new = k_pinch * (d_new - d_zero);
-                            return 0;
+
                         }
                     }
                 } else {
@@ -756,12 +756,12 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
                         branch = std::get<0>(llssff);
                         k_tangent = std::get<1>(llssff);
                         f_new = std::get<2>(llssff);
-                        return 0;
+
                     } else {
                         branch = 9;
                         k_tangent = f_global[is] / (d_global[is] - d_zero);
                         f_new = k_tangent * (d_new - d_zero);
-                        return 0;
+
                     }
                 }
             }
@@ -773,7 +773,7 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
         if ((d_zero_from_local - d_new) * sign < 0) {
             if ((d_local - d_new) * sign > 0) {
                 f_new = f_local + (d_new - d_local) * k_local;
-                return 0;
+
             } else {
 // % loop of 830 %%
                 if (abs(d_global[is]) > d_yield) {
@@ -783,19 +783,19 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
                         k_pinch = abs(f_global[is] / (k_global - d_global[is])) * pow( abs(d_global[is] / (k_global - d_global[is])), k_pinch_factor);
                         k_tangent = k_pinch;
                         f_new = k_pinch * (d_new - d_zero);
-                        return 0;
+
                     } else {
                         if ((d_new - d_global[is]) * sign >= 0) {
                             std::tuple<int, float, float>llssff = this->Tslip_120(d_yield, d_new, sign, f_crack, d_crack, k_yield, k_plastic, f_yield);
                             branch = std::get<0>(llssff);
                             k_tangent = std::get<1>(llssff);
                             f_new = std::get<2>(llssff);
-                            return 0;
+
                         } else {
                             branch = 9;
                             k_tangent = f_global[is] / (d_global[is] - d_zero);
                             f_new = k_tangent * (d_new - d_zero);
-                            return 0;
+
                         }
                     }
                 } else {
@@ -804,12 +804,12 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
                             branch = std::get<0>(llssff);
                             k_tangent = std::get<1>(llssff);
                             f_new = std::get<2>(llssff);
-                            return 0;
+
                     } else {
                             branch = 9;
                             k_tangent = f_global[is] / (d_global[is] - d_zero);
                             f_new = k_tangent * (d_new - d_zero);
-                            return 0;
+
                         }
                 }
             }
@@ -828,12 +828,12 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
                         branch = std::get<0>(llssff);
                         k_tangent = std::get<1>(llssff);
                         f_new = std::get<2>(llssff);
-                        return 0;
+
                     } else {
                         branch = 9;
                         k_tangent = f_global[is] / (d_global[is] - d_zero);
                         f_new = k_tangent * (d_new - d_zero);
-                        return 0;
+
                     }
                 } else {
  // % loop of 440 %%
@@ -852,7 +852,7 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
                             branch = std::get<0>(llssff);
                             k_tangent = std::get<1>(llssff);
                             f_new = std::get<2>(llssff);
-                            return 0;
+
                         } else {
                             branch = 7;
                             k_global_from_pinch = f_global[is] / d_global[is] * k_global_factor;
@@ -860,7 +860,7 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
                             d_zero_from_pinch = d_global[is] - f_global[is] / k_global_from_pinch;
                             d_zero = d_zero_from_pinch;
                             f_new = k_global_from_pinch * (d_new - d_zero_from_pinch);
-                            return 0;
+
                         }
                     } else {
                         branch = 6;
@@ -868,7 +868,7 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
                         k_pinch = abs(f_global[is] / (k_global - d_global[is])) * pow( abs(d_global[is] / (k_global - d_global[is])), k_pinch_factor);
                         k_tangent = k_pinch;
                         f_new = k_pinch * (d_new - d_zero);
-                        return 0;
+
                     }
                 }
             } else {
@@ -877,12 +877,12 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
                     branch = std::get<0>(llssff);
                     k_tangent = std::get<1>(llssff);
                     f_new = std::get<2>(llssff);
-                    return 0;
+
                 } else {
                     branch = 9;
                     k_tangent = f_global[is] / (d_global[is] - d_zero);
                     f_new = k_tangent * (d_new - d_zero);
-                    return 0;
+
                 }
             }
         }
@@ -896,10 +896,10 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
                 branch = std::get<0>(llssff);
                 k_tangent = std::get<1>(llssff);
                 f_new = std::get<2>(llssff);
-                return 0;
+
             } else {
                 f_new = k_tangent * (d_new - d_zero);
-                return 0;
+
             }
     } else {
  // % loop of 630 %%
@@ -911,7 +911,7 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
                 branch = 8;
                 k_tangent = k_local;
                 f_new = f_local + (d_new - d_local) * k_local;
-                return 0;
+
             } else {
  // % loop of 840 %%
                 d_zero = d_zero_from_local;
@@ -927,12 +927,12 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
                             branch = std::get<0>(llssff);
                             k_tangent = std::get<1>(llssff);
                             f_new = std::get<2>(llssff);
-                            return 0;
+
                         } else {
                             branch = 9;
                             k_tangent = f_global[is] / (d_global[is] - d_zero);
                             f_new = k_tangent * (d_new - d_zero);
-                            return 0;
+
                         }
                     } else {
  // % loop of 440 %%
@@ -951,7 +951,7 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
                                 branch = std::get<0>(llssff);
                                 k_tangent = std::get<1>(llssff);
                                 f_new = std::get<2>(llssff);
-                                return 0;
+
                             } else {
                                 branch = 7;
                                 k_global_from_pinch = f_global[is] / d_global[is] * k_global_factor;
@@ -959,7 +959,7 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
                                 d_zero_from_pinch = d_global[is] - f_global[is] / k_global_from_pinch;
                                 d_zero = d_zero_from_pinch;
                                 f_new = k_global_from_pinch * (d_new - d_zero_from_pinch);
-                                return 0;
+
                             }
                         } else {
                             branch = 6;
@@ -967,7 +967,7 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
                             k_pinch = abs(f_global[is] / (k_global - d_global[is])) * pow( abs(d_global[is] / (k_global - d_global[is])), k_pinch_factor);
                             k_tangent = k_pinch;
                             f_new = k_pinch * (d_new - d_zero);
-                            return 0;
+
                         }
                     }
                 } else {
@@ -976,17 +976,18 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
                         branch = std::get<0>(llssff);
                         k_tangent = std::get<1>(llssff);
                         f_new = std::get<2>(llssff);
-                        return 0;
+
                     } else {
                         branch = 9;
                         k_tangent = f_global[is] / (d_global[is] - d_zero);
                         f_new = k_tangent * (d_new - d_zero);
-                        return 0;
+
                     }
                 }
             }
         }
     }
+    return 0;
 }
 
 double TakedaSlip::getStress(void)
@@ -1016,9 +1017,7 @@ double TakedaSlip::getStrain(void)
 int TakedaSlip::commitState(void)
 {
     cbranch = branch;
-    cd_old = d_old;
     cd_new = d_new;
-    cf_old = f_old;
     cf_new = f_new;
     ck_tangent = k_tangent;
     cf_reload = f_reload;
@@ -1036,9 +1035,7 @@ int TakedaSlip::commitState(void)
 int TakedaSlip::revertToLastCommit(void)
 {
     branch = cbranch;
-    d_old = cd_old;
     d_new = cd_new;
-    f_old = cf_old;
     f_new = cf_new;
     k_tangent = ck_tangent;
     f_reload = cf_reload;
@@ -1071,9 +1068,7 @@ TakedaSlip::getCopy(void)
         k_crack, k_yield, k_plastic,
         unload_from_global_factor, unload_from_local_factor);
     theCopy->branch = branch;
-    theCopy->d_old = d_old;
     theCopy->d_new = d_new;
-    theCopy->f_old = f_old;
     theCopy->f_new = f_new;
     theCopy->k_tangent = k_tangent;
     theCopy->f_reload = f_reload;
@@ -1087,9 +1082,7 @@ TakedaSlip::getCopy(void)
     theCopy->k_local = k_local;
 
     theCopy->cbranch = cbranch;
-    theCopy->cd_old = cd_old;
     theCopy->cd_new = cd_new;
-    theCopy->cf_old = cf_old;
     theCopy->cf_new = cf_new;
     theCopy->ck_tangent = ck_tangent;
     theCopy->cf_reload = cf_reload;
@@ -1112,9 +1105,7 @@ int TakedaSlip::sendSelf(int cTag, Channel &theChannel)
     static Vector data(137);
     data(0) = this->getTag();
     data(11) = branch;
-    data(12) = d_old;
     data(13) = d_new;
-    data(14) = f_old;
     data(15) = f_new;
     data(16) = k_tangent;
     data(17) = f_reload;
@@ -1131,9 +1122,7 @@ int TakedaSlip::sendSelf(int cTag, Channel &theChannel)
     data(28) = k_local;
 
     data(111) = cbranch;
-    data(112) = cd_old;
     data(113) = cd_new;
-    data(114) = cf_old;
     data(115) = cf_new;
     data(116) = ck_tangent;
     data(117) = cf_reload;
@@ -1168,9 +1157,7 @@ int TakedaSlip::recvSelf(int cTag, Channel &theChannel, FEM_ObjectBroker &theBro
         cout << " recvSelf" << endln;
         this->setTag((int)data(0));
         branch = data(11);
-        d_old = data(12);
         d_new = data(13);
-        f_old = data(14);
         f_new = data(15);
         k_tangent = data(16);
         f_reload = data(17);
@@ -1187,9 +1174,7 @@ int TakedaSlip::recvSelf(int cTag, Channel &theChannel, FEM_ObjectBroker &theBro
         k_local = data(28);
 
         cbranch = data(111);
-        cd_old = data(112);
         cd_new = data(113);
-        cf_old = data(114);
         cf_new = data(115);
         ck_tangent = data(116);
         cf_reload = data(117);
