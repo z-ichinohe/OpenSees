@@ -122,7 +122,7 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
     int is = f_old > 0 ? 1 : 2;
     int sign = f_old > 0 ? 1 : -1;
 
-// Unloading From Reloading
+// Backbone to Unloading
     if ((branch == 2 || branch == 3) && (d_new - d_old) * sign <= 0) {
         f_global[is] = f_old;
         d_global[is] = d_old;
@@ -135,6 +135,7 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
         d_zero = d_old - f_old / k_unload[is];
     }
 
+// Reloading to Unloading
     if ((branch == 6 || branch == 7 || branch == 9) && (d_new - d_old) * sign <= 0) {
         branch = 8;
         d_local = d_old;
@@ -151,8 +152,8 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
         sign = d_new > d_old ? 1 : -1;
     }
 
-    bool reload_flag = false;
 // Reloading From Unloading
+    bool reload_flag = false;
     if (branch == 4 && (d_new - d_zero) * sign <= 0) {
         reload_flag = true;
     }
@@ -202,20 +203,13 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
         }
     }
 
-// Reloading From Reloading
-    if (branch == 1 && d_crack - abs(d_new) <= 0)  {
-        branch = 2;
-        f_global[1] = f_crack;
-        f_global[2] = - f_crack;
-        d_global[1] = d_crack;
-        d_global[2] = - d_crack;
-        is = d_new > 0 ? 1 : 2;
-        sign = d_new > 0 ? 1 : -1;
-    }
+// Unloading Branch to Reloading
+// 4 -> 2
     if (branch == 4 && (d_global[is] - d_new) * sign <= 0) {
         branch = 2;
         k_tangent = k_yield;
     }
+// 5 -> 2, 9
     if (branch == 5 && (d_reload - d_new) * sign <= 0) {
         if ((abs(d_global[is]) <= d_crack) && (abs(d_global[3 - is]) <= d_yield)) {
             branch = 2;
@@ -227,6 +221,7 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
             // %d_zero = d_yield * sign - f_yield * sign * (d_yield * sign - d_reload) / (f_yield * sign - f_reload);%%%%�o������ψʂƙ��f�͂𐳕��̂ǂ�����Ђъ���_�𒴂���܂łЂъ���_���L������悤�ɂ���
         }
     }
+// 8 -> 6, 9
     if (branch == 8 && (d_local - d_new) * sign <= 0) {
         if (d_yield <= abs(d_global[is])) {
             branch = 6;
@@ -235,6 +230,8 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
             k_tangent = f_global[is] / (d_global[is] - d_zero);
         }
     }
+// Pinching and Reloading
+// 6 -> 7, 9
     if (branch == 6 && (d_pinch - d_new) * sign <= 0) {
         branch = 7;
     }
@@ -242,10 +239,24 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
         branch = 9;
         k_tangent = f_global[is] / (d_global[is] - d_zero);
     }
+// 7, 9 -> 2
     if ((branch == 7 || branch == 9) && (d_global[is] - d_new) * sign <= 0) {
         branch = 2;
         k_tangent = k_yield;
     }
+// Backbone
+// 1 -> 2
+    if (branch == 1 && d_crack - abs(d_new) <= 0)  {
+        branch = 2;
+        std::cout << d_global[2] << " " << d_crack << "\n";
+        f_global[1] = f_crack;
+        f_global[2] = - f_crack;
+        d_global[1] = d_crack;
+        d_global[2] = - d_crack;
+        is = d_new > 0 ? 1 : 2;
+        sign = d_new > 0 ? 1 : -1;
+    }
+// 2 -> 3
     if (branch == 2 && d_yield <= abs(d_new)) {
         branch = 3;
         k_tangent = k_plastic;
