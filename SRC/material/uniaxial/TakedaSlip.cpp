@@ -134,31 +134,21 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
         f_local = f_old;
         const double f_reload = d_yield > abs(d_global[is]) ? abs(f_global[is]) : f_yield;
         const double d_reload = d_yield > abs(d_global[is]) ? abs(d_global[is]) : d_yield;
-        k_local = (f_reload + f_crack) / (d_reload + d_crack) * pow(d_reload / abs(d_global[is]), unload_from_global_factor);
+        k_unload = (f_reload + f_crack) / (d_reload + d_crack) * pow(d_reload / abs(d_global[is]), unload_from_global_factor);
         if (!on_backbone) {
-            k_local *= unload_from_local_factor;
+            k_unload *= unload_from_local_factor;
         }
-        k_tangent = k_local;
-        d_zero = d_local - f_local / k_local;
+        k_tangent = k_unload;
+        d_zero = d_local - f_local / k_unload;
     }
 
-// 1 and 15 are same branch
-    if (branch == 15 && (d_new - d_zero) * sign <= 0) {
-        branch = 1;
+// Forward to Reloading from Unloading
+    if (branch == 1 && (d_new - d_zero) * sign <= 0) {
         is = d_new > d_old ? 1 : 2;
         sign = d_new > d_old ? 1 : -1;
-    }
-
-// Reloading From Unloading
-    if ((branch == 1) && (d_new - d_zero) * sign <= 0) {
-        is = d_new > d_old ? 1 : 2;
-        sign = d_new > d_old ? 1 : -1;
-        // -Crack: 15
-        // -Yield: 3
-        // -: 2
         if (abs(d_global[is]) <= d_crack) {
             branch = 15;
-            d_unload = d_zero + sign * f_crack / k_local;
+            d_unload = d_zero + sign * f_crack / k_unload;
             f_unload = f_crack * sign;
         } else if (abs(d_global[is]) <= d_yield) {
             branch = 3;
@@ -187,13 +177,12 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
                 } else {
                     d_pinch = (k_global * d_global[is] - k_pinch * d_zero - f_global[is]) / (k_global - k_pinch);
                 }
+                f_pinch = (d_pinch - d_zero) * k_pinch;
                 k_tangent = k_pinch;
             }
         }
     }
 
-// Unloading Branch to Reloading
-// 15 -> 3, 4
     if (branch == 15 && (d_unload - d_new) * sign <= 0) {
         if (abs(d_global[is]) <= d_crack && abs(d_global[3 - is]) <= d_yield) {
             branch = 4;
@@ -206,13 +195,20 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
             // %d_zero = d_yield * sign - f_yield * sign * (d_yield * sign - d_unload) / (f_yield * sign - f_unload);%%%%�o������ψʂƙ��f�͂𐳕��̂ǂ�����Ђъ���_�𒴂���܂łЂъ���_���L������悤�ɂ���
         }
     }
-// 1 -> 2, 3
+
+// Back to the Reloding from Unloading
+    if (branch == 15 && (d_new - d_zero) * sign <= 0) {
+        branch = 1;
+        is = d_new > d_old ? 1 : 2;
+        sign = d_new > d_old ? 1 : -1;
+    }
     if (branch == 1 && (d_local - d_new) * sign <= 0) {
         if (d_yield <= abs(d_global[is])) {
             branch = 2;
-            const double k_temp = (f_crack + f_yield) / (d_crack + d_yield) * pow((d_yield / abs(d_global[3 - is])), unload_from_global_factor);
-            const double d_zero_from_global = d_global[3 - is] - f_global[3 - is] / k_temp;
-            const double k_pinch = abs(f_global[is] / (d_zero_from_global - d_global[is])) * pow( abs(d_global[is] / (d_zero_from_global - d_global[is])), k_pinch_factor);
+            // const double k_temp = (f_crack + f_yield) / (d_crack + d_yield) * pow((d_yield / abs(d_global[3 - is])), unload_from_global_factor);
+            // const double d_zero_from_global = d_global[3 - is] - f_global[3 - is] / k_temp;
+            // const double k_pinch = abs(f_global[is] / (d_zero_from_global - d_global[is])) * pow( abs(d_global[is] / (d_zero_from_global - d_global[is])), k_pinch_factor);
+            const double k_pinch = f_pinch / (d_pinch - d_zero);
             k_tangent = k_pinch;
         } else {
             branch = 3;
@@ -237,29 +233,18 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
     if (branch == 0 && d_crack <= abs(d_new))  {
         branch = 4;
         k_tangent = k_yield;
-        // d_zero = (d_yield - f_yield / k_tangent) * sign;
     }
 // 4 -> 5
     if (branch == 4 && d_yield <= abs(d_new)) {
         branch = 5;
         k_tangent = k_plastic;
-        // d_zero = (d_yield - f_yield / k_tangent) * sign;
     }
 
 // Calculate Force
-// Backbone
-    // f_new = (d_new - d_zero) * k_tangent;
     if (branch == 0 || branch == 1 || branch == 2 || branch == 3 || branch == 15) {
         f_new = (d_new - d_zero) * k_tangent;
     } else if (branch == 4 || branch == 5) {
         f_new = sign * f_yield + (d_new - sign * d_yield) * k_tangent;
-// Unloading
-//     } else if (branch == 1) {
-//         // f_new = f_local + (d_new - d_local) * k_local;
-//         f_new = (d_new - d_zero) * k_tangent;
-// // Reloading
-//     } else if (branch == 15 || branch == 2 || branch == 3) {
-//         f_new = (d_new - d_zero) * k_tangent;
     }
     return 0;
 }
@@ -291,34 +276,38 @@ double TakedaSlip::getStrain(void)
 int TakedaSlip::commitState(void)
 {
     cbranch = branch;
-    cd_new = d_new;
-    cf_new = f_new;
     ck_tangent = k_tangent;
-    cf_unload = f_unload;
-    cf_local = f_local;
-    cd_unload = d_unload;
-    cd_local = d_local;
+    ck_unload = k_unload;
+    cf_new = f_new;
+    cd_new = d_new;
     cf_global = f_global;
     cd_global = d_global;
+    cf_local = f_local;
+    cd_local = d_local;
+    cf_unload = f_unload;
+    cd_unload = d_unload;
+    cf_pinch = f_pinch;
     cd_pinch = d_pinch;
-    ck_local = k_local;
+    cd_zero = d_zero;
     return 0;
 }
 
 int TakedaSlip::revertToLastCommit(void)
 {
     branch = cbranch;
-    d_new = cd_new;
-    f_new = cf_new;
     k_tangent = ck_tangent;
-    f_unload = cf_unload;
-    f_local = cf_local;
-    d_unload = cd_unload;
-    d_local = cd_local;
+    k_unload = ck_unload;
+    f_new = cf_new;
+    d_new = cd_new;
     f_global = cf_global;
     d_global = cd_global;
+    f_local = cf_local;
+    d_local = cd_local;
+    f_unload = cf_unload;
+    d_unload = cd_unload;
+    f_pinch = cf_pinch;
     d_pinch = cd_pinch;
-    k_local = ck_local;
+    d_zero = cd_zero;
     return 0;
 }
 
@@ -347,33 +336,37 @@ TakedaSlip::getCopy(void)
         d_crack, d_yield,
         k_crack, k_yield, k_plastic,
         unload_from_global_factor, unload_from_local_factor);
+
     theCopy->branch = branch;
+    theCopy->k_tangent = k_tangent;
+    theCopy->k_unload = k_unload;
     theCopy->d_new = d_new;
     theCopy->f_new = f_new;
-    theCopy->k_tangent = k_tangent;
-    theCopy->f_unload = f_unload;
-    theCopy->f_local = f_local;
-    theCopy->d_unload = d_unload;
-    theCopy->d_local = d_local;
     theCopy->f_global = f_global;
     theCopy->d_global = d_global;
+    theCopy->f_local = f_local;
+    theCopy->d_local = d_local;
+    theCopy->f_unload = f_unload;
+    theCopy->d_unload = d_unload;
+    theCopy->f_pinch = f_pinch;
     theCopy->d_pinch = d_pinch;
+    theCopy->d_zero = d_zero;
 
-    theCopy->k_local = k_local;
 
     theCopy->cbranch = cbranch;
+    theCopy->ck_tangent = ck_tangent;
+    theCopy->ck_unload = ck_unload;
     theCopy->cd_new = cd_new;
     theCopy->cf_new = cf_new;
-    theCopy->ck_tangent = ck_tangent;
-    theCopy->cf_unload = cf_unload;
-    theCopy->cf_local = cf_local;
-    theCopy->cd_unload = cd_unload;
-    theCopy->cd_local = cd_local;
     theCopy->cf_global = cf_global;
     theCopy->cd_global = cd_global;
+    theCopy->cf_local = cf_local;
+    theCopy->cd_local = cd_local;
+    theCopy->cf_unload = cf_unload;
+    theCopy->cd_unload = cd_unload;
+    theCopy->cf_pinch = cf_pinch;
     theCopy->cd_pinch = cd_pinch;
-
-    theCopy->ck_local = ck_local;
+    theCopy->cd_zero = cd_zero;
     return theCopy;
 }
 
@@ -399,7 +392,7 @@ int TakedaSlip::sendSelf(int cTag, Channel &theChannel)
     data(25) = d_pinch;
 
 
-    data(28) = k_local;
+    data(28) = k_unload;
 
     data(111) = cbranch;
     data(113) = cd_new;
@@ -416,7 +409,7 @@ int TakedaSlip::sendSelf(int cTag, Channel &theChannel)
     data(125) = cd_pinch;
 
 
-    data(128) = ck_local;
+    data(128) = ck_unload;
     res = theChannel.sendVector(this->getDbTag(), cTag, data);
     if (res < 0)
         opserr << "TakedaSlip::sendSelf() - failed to send data\n";
@@ -451,7 +444,7 @@ int TakedaSlip::recvSelf(int cTag, Channel &theChannel, FEM_ObjectBroker &theBro
         d_pinch = data(25);
 
 
-        k_local = data(28);
+        k_unload = data(28);
 
         cbranch = data(111);
         cd_new = data(113);
@@ -468,7 +461,7 @@ int TakedaSlip::recvSelf(int cTag, Channel &theChannel, FEM_ObjectBroker &theBro
         cd_pinch = data(125);
 
 
-        ck_local = data(128);
+        ck_unload = data(128);
     }
 
     return res;
