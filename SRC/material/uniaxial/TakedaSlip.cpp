@@ -361,12 +361,12 @@ int TakedaSlip::revertToStart(void)
     f_crack = d_crack * k_crack;
     f_yield = f_crack + k_yield * (d_yield - d_crack);
 
-    f_global[1] = f_crack;
-    f_global[2] = - f_crack;
-    d_global[1] = d_crack;
-    d_global[2] = - d_crack;
-    k_unload[1] = k_crack;
-    k_unload[2] = k_crack;
+    f_global[1] = cf_global[1] = f_crack;
+    f_global[2] = cf_global[2] = - f_crack;
+    d_global[1] = cd_global[1] = d_crack;
+    d_global[2] = cd_global[2] = - d_crack;
+    k_unload[1] = ck_unload[1] = k_crack;
+    k_unload[2] = ck_unload[2] = k_crack;
     return 0;
 }
 
