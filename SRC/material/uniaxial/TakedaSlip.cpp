@@ -159,17 +159,17 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
             branch = 5;
             d_reload = d_zero + sign * f_crack / k_unload[3 - is];
             f_reload = f_crack * sign;
-            if ((d_reload - d_new) * sign > 0) {
-                branch = 5;
-            } else if ((d_global[is] * sign <= d_crack) && (abs(d_global[3 - is]) <= d_yield)) {
-                branch = 2;
-            } else {
-                branch = 9;
-                f_global[is] = f_yield * sign;
-                d_global[is] = d_yield * sign;
-                d_zero = d_yield * sign - f_yield * sign * (d_yield * sign - d_reload) / (f_yield * sign - f_reload);
-                k_tangent = f_global[is] / (d_global[is] - d_zero);
-            }
+            // if ((d_reload - d_new) * sign > 0) {
+            //     branch = 5;
+            // } else if ((d_global[is] * sign <= d_crack) && (abs(d_global[3 - is]) <= d_yield)) {
+            //     branch = 2;
+            // } else {
+            //     branch = 9;
+            //     f_global[is] = f_yield * sign;
+            //     d_global[is] = d_yield * sign;
+            //     d_zero = d_yield * sign - f_yield * sign * (d_yield * sign - d_reload) / (f_yield * sign - f_reload);
+            //     k_tangent = f_global[is] / (d_global[is] - d_zero);
+            // }
         } else if (abs(d_global[is]) <= d_yield) {
             branch = 9;
             const double k_to_global = f_global[is] / (d_global[is] - d_zero);
