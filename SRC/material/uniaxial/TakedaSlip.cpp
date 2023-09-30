@@ -149,8 +149,6 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
         branch = 4;
         is = d_new > d_old ? 1 : 2;
         sign = d_new > d_old ? 1 : -1;
-        // is = is == 1 ? 2 : 1;
-        // sign = sign == 1 ? -1 : 1;
     }
 
     bool reload_flag = false;
@@ -207,12 +205,6 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
 // Reloading From Reloading
     if (branch == 1 && d_crack - abs(d_new) <= 0)  {
         branch = 2;
-        f_global[1] = f_crack;
-        f_global[2] = - f_crack;
-        d_global[1] = d_crack;
-        d_global[2] = - d_crack;
-        k_unload[1] = k_crack;
-        k_unload[2] = k_crack;
         is = d_new > 0 ? 1 : 2;
         sign = d_new > 0 ? 1 : -1;
     }
@@ -353,6 +345,13 @@ int TakedaSlip::revertToStart(void)
     k_tangent = ck_tangent = k_crack;
     f_crack = d_crack * k_crack;
     f_yield = f_crack + k_yield * (d_yield - d_crack);
+
+    f_global[1] = f_crack;
+    f_global[2] = - f_crack;
+    d_global[1] = d_crack;
+    d_global[2] = - d_crack;
+    k_unload[1] = k_crack;
+    k_unload[2] = k_crack;
     return 0;
 }
 
