@@ -248,13 +248,8 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
 // 1 -> 2
     if (branch == 1 && d_crack - abs(d_new) <= 0)  {
         branch = 2;
-        std::cout << d_global[2] << " " << d_crack << "\n";
-        f_global[1] = f_crack;
-        f_global[2] = - f_crack;
-        d_global[1] = d_crack;
-        d_global[2] = - d_crack;
-        is = d_new > 0 ? 1 : 2;
-        sign = d_new > 0 ? 1 : -1;
+        // is = d_new > 0 ? 1 : 2;
+        // sign = d_new > 0 ? 1 : -1;
     }
 // 2 -> 3
     if (branch == 2 && d_yield <= abs(d_new)) {
