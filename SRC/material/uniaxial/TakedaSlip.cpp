@@ -237,22 +237,22 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
     if (branch == 0 && d_crack <= abs(d_new))  {
         branch = 4;
         k_tangent = k_yield;
-        d_zero = (d_yield - f_yield / k_tangent) * sign;
+        // d_zero = (d_yield - f_yield / k_tangent) * sign;
     }
 // 4 -> 5
     if (branch == 4 && d_yield <= abs(d_new)) {
         branch = 5;
         k_tangent = k_plastic;
-        d_zero = (d_yield - f_yield / k_tangent) * sign;
+        // d_zero = (d_yield - f_yield / k_tangent) * sign;
     }
 
 // Calculate Force
 // Backbone
-    f_new = (d_new - d_zero) * k_tangent;
-    // if (branch == 0 || branch == 1 || branch == 2 || branch == 3 || branch == 15) {
-    //     f_new = (d_new - d_zero) * k_tangent;
-    // } else if (branch == 4 || branch == 5) {
-    //     f_new = sign * f_yield + (d_new - sign * d_yield) * k_tangent;
+    // f_new = (d_new - d_zero) * k_tangent;
+    if (branch == 0 || branch == 1 || branch == 2 || branch == 3 || branch == 15) {
+        f_new = (d_new - d_zero) * k_tangent;
+    } else if (branch == 4 || branch == 5) {
+        f_new = sign * f_yield + (d_new - sign * d_yield) * k_tangent;
 // Unloading
 //     } else if (branch == 1) {
 //         // f_new = f_local + (d_new - d_local) * k_local;
@@ -260,7 +260,7 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
 // // Reloading
 //     } else if (branch == 15 || branch == 2 || branch == 3) {
 //         f_new = (d_new - d_zero) * k_tangent;
-    // }
+    }
     return 0;
 }
 
