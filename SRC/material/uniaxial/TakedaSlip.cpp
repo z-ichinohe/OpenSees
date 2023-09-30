@@ -123,9 +123,11 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
     int sign = f_old > 0 ? 1 : -1;
 
 // Backbone to Unloading
-    if ((branch == 2 || branch == 3) && (d_new - d_old) * sign <= 0) {
-        f_global[is] = f_old;
-        d_global[is] = d_old;
+    if ((branch == 2 || branch == 3 || branch == 6 || branch == 7 || branch == 9) && (d_new - d_old) * sign <= 0) {
+        if (branch == 2 || branch == 3) {
+            f_global[is] = f_old;
+            d_global[is] = d_old;
+        }
         d_local = d_old;
         f_local = f_old;
         if (branch == 2) {
@@ -133,25 +135,30 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
         } else {
             k_local = (f_crack + f_yield) / (d_crack + d_yield) * pow((d_yield / abs(d_global[is])), unload_from_global_factor);
         }
-        branch = 4;
+        if (branch == 2 || branch == 3) {
+            branch = 4;
+        } else {
+            branch = 8;
+            k_local *= unload_from_local_factor;
+        }
         k_tangent = k_local;
-        d_zero = d_old - f_old / k_local;
+        d_zero = d_local - f_local / k_local;
     }
 
 // Reloading to Unloading
-    if ((branch == 6 || branch == 7 || branch == 9) && (d_new - d_old) * sign <= 0) {
-        branch = 8;
-        d_local = d_old;
-        f_local = f_old;
-        if (branch == 2) {
-            k_local = (abs(f_global[is]) + f_crack) / (abs(d_global[is]) + d_crack);
-        } else {
-            k_local = (f_crack + f_yield) / (d_crack + d_yield) * pow((d_yield / abs(d_global[is])), unload_from_global_factor);
-        }
-        k_local = k_local * unload_from_local_factor;
-        d_zero = d_local - f_local / k_local;
-        k_tangent = k_local;
-    }
+    // if ((branch == 6 || branch == 7 || branch == 9) && (d_new - d_old) * sign <= 0) {
+    //     d_local = d_old;
+    //     f_local = f_old;
+    //     if (branch == 2) {
+    //         k_local = (abs(f_global[is]) + f_crack) / (abs(d_global[is]) + d_crack);
+    //     } else {
+    //         k_local = (f_crack + f_yield) / (d_crack + d_yield) * pow((d_yield / abs(d_global[is])), unload_from_global_factor);
+    //     }
+    //     branch = 8;
+    //     k_local = k_local * unload_from_local_factor;
+    //     d_zero = d_local - f_local / k_local;
+    //     k_tangent = k_local;
+    // }
 
 // 4 and 5 are same branch
     if (branch == 5 && (d_new - d_zero) * sign <= 0) {
