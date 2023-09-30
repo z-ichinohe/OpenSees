@@ -129,13 +129,13 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
         d_local = d_old;
         f_local = f_old;
         if (branch == 2) {
-            k_unload[is] = (abs(f_global[is]) + f_crack) / (abs(d_global[is]) + d_crack);
+            k_local = (abs(f_global[is]) + f_crack) / (abs(d_global[is]) + d_crack);
         } else {
-            k_unload[is] = (f_crack + f_yield) / (d_crack + d_yield) * pow((d_yield / abs(d_global[is])), unload_from_global_factor);
+            k_local = (f_crack + f_yield) / (d_crack + d_yield) * pow((d_yield / abs(d_global[is])), unload_from_global_factor);
         }
         branch = 4;
-        k_tangent = k_unload[is];
-        d_zero = d_old - f_old / k_unload[is];
+        k_tangent = k_local;
+        d_zero = d_old - f_old / k_local;
     }
 
 // Reloading to Unloading
@@ -144,11 +144,11 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
         d_local = d_old;
         f_local = f_old;
         if (branch == 2) {
-            k_unload[is] = (abs(f_global[is]) + f_crack) / (abs(d_global[is]) + d_crack);
+            k_local = (abs(f_global[is]) + f_crack) / (abs(d_global[is]) + d_crack);
         } else {
-            k_unload[is] = (f_crack + f_yield) / (d_crack + d_yield) * pow((d_yield / abs(d_global[is])), unload_from_global_factor);
+            k_local = (f_crack + f_yield) / (d_crack + d_yield) * pow((d_yield / abs(d_global[is])), unload_from_global_factor);
         }
-        k_local = k_unload[is] * unload_from_local_factor;
+        k_local = k_local * unload_from_local_factor;
         d_zero = d_local - f_local / k_local;
         k_tangent = k_local;
     }
@@ -277,7 +277,7 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
     } else if (branch == 3) {
         f_new = f_yield * sign + (d_new - d_yield * sign) * k_plastic;
     } else if (branch == 4) {
-        f_new = f_global[is] + (d_new - d_global[is]) * k_unload[is];
+        f_new = f_global[is] + (d_new - d_global[is]) * k_local;
     } else if (branch == 5 || branch == 6 || branch == 7) {
         f_new = (d_new - d_zero) * k_tangent;
     } else if (branch == 8) {
