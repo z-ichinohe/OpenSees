@@ -143,6 +143,11 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
         branch = 8;
         d_local = d_old;
         f_local = f_old;
+        if (branch == 2) {
+            k_unload[is] = (abs(f_global[is]) + f_crack) / (abs(d_global[is]) + d_crack);
+        } else {
+            k_unload[is] = (f_crack + f_yield) / (d_crack + d_yield) * pow((d_yield / abs(d_global[is])), unload_from_global_factor);
+        }
         k_local = k_unload[is] * unload_from_local_factor;
         d_zero = d_local - f_local / k_local;
         k_tangent = k_local;
@@ -151,7 +156,6 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
 // 4 and 5 are same branch
     if (branch == 5 && (d_new - d_zero) * sign <= 0) {
         branch = 4;
-        // k_tangent = k_unload[is];
         is = d_new > d_old ? 1 : 2;
         sign = d_new > d_old ? 1 : -1;
     }
