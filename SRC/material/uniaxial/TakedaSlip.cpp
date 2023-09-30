@@ -139,6 +139,7 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
             branch = 18;
             k_local *= unload_from_local_factor;
         }
+        branch = 1;
         k_tangent = k_local;
         d_zero = d_local - f_local / k_local;
     }
