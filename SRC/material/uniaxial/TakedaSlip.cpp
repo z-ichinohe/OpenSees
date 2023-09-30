@@ -147,6 +147,7 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
         is = d_new > d_old ? 1 : 2;
         sign = d_new > d_old ? 1 : -1;
         if (abs(d_global[is]) <= d_crack) {
+            // 降伏している場合、p_crackに向かわない
             branch = 15;
             d_unload = d_zero + sign * f_crack / k_unload;
             f_unload = f_crack * sign;
@@ -154,21 +155,30 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
             branch = 3;
             const double k_to_global = f_global[is] / (d_global[is] - d_zero);
             const double k_to_yield = f_yield * sign / (d_yield * sign - d_zero);
+            // 現在降伏ブランチに負勾配を設定しているので問題はないが、一般的には不等号が逆
             if (k_to_global <= k_to_yield) {
                 d_global[is] = d_yield * sign;
                 f_global[is] = f_yield * sign;
             }
             k_tangent = f_global[is] / (d_global[is] - d_zero);
         } else {
-            const double k_global = f_global[is] / d_global[is] * k_global_factor;
-            const double d_zero_from_global = d_global[is] - f_global[is] / k_global;
-            d_pinch = d_zero;
-            if ((d_zero_from_global - d_zero) * sign <= 0) {
+            // ここでは正側を見てる
+            const double k_from_global = f_global[is] / d_global[is] * k_global_factor;
+            const double k_to_global = f_global[is] / (d_global[is] - d_zero);
+            if (k_to_global > k_from_global) {
                 branch = 3;
-                k_tangent = f_global[is] / (d_global[is] - d_zero);
+                k_tangent = k_to_global;
+            // }
+            // const double k_global = f_global[is] / d_global[is] * k_global_factor;
+            // const double d_zero_from_global = d_global[is] - f_global[is] / k_global;
+            // d_pinch = d_zero;
+            // if ((d_zero_from_global - d_zero) * sign <= 0) {
+            //     branch = 3;
+            //     k_tangent = f_global[is] / (d_global[is] - d_zero);
             } else {
                 branch = 2;
                 const double k_global = f_global[is] / d_global[is] * k_global_factor;
+                // なんで反対側の値が必要なのか一向に謎
                 const double k_temp = (f_crack + f_yield) / (d_crack + d_yield) * pow((d_yield / abs(d_global[3 - is])), unload_from_global_factor);
                 const double d_zero_from_global = d_global[3 - is] - f_global[3 - is] / k_temp;
                 const double k_pinch = abs(f_global[is] / (d_zero_from_global - d_global[is])) * pow( abs(d_global[is] / (d_zero_from_global - d_global[is])), k_pinch_factor);
@@ -188,6 +198,7 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
             branch = 4;
             k_tangent = k_yield;
         } else {
+            // p_unloadからp_crackに向かうわけではないので、段差が生じる
             branch = 3;
             f_global[is] = f_crack * sign;
             d_global[is] = d_crack * sign;
@@ -205,11 +216,7 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
     if (branch == 1 && (d_local - d_new) * sign <= 0) {
         if (d_yield <= abs(d_global[is])) {
             branch = 2;
-            // const double k_temp = (f_crack + f_yield) / (d_crack + d_yield) * pow((d_yield / abs(d_global[3 - is])), unload_from_global_factor);
-            // const double d_zero_from_global = d_global[3 - is] - f_global[3 - is] / k_temp;
-            // const double k_pinch = abs(f_global[is] / (d_zero_from_global - d_global[is])) * pow( abs(d_global[is] / (d_zero_from_global - d_global[is])), k_pinch_factor);
-            const double k_pinch = f_pinch / (d_pinch - d_zero);
-            k_tangent = k_pinch;
+            k_tangent = f_pinch / (d_pinch - d_zero);
         } else {
             branch = 3;
             k_tangent = f_global[is] / (d_global[is] - d_zero);
@@ -219,7 +226,7 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
 // 2 -> 3
     if (branch == 2 && (d_pinch - d_new) * sign <= 0) {
         branch = 3;
-        const double k_global = f_global[is] / d_global[is] * k_global_factor;
+        const double k_global = (f_global[is] - f_pinch) / (d_global[is] - d_pinch);
         k_tangent = k_global;
         d_zero = d_global[is] - f_global[is] / k_global;
     }
