@@ -122,7 +122,7 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
     int is = f_old > 0 ? 1 : 2;
     int sign = f_old > 0 ? 1 : -1;
 
-// Backbone to Unloading
+// Reloading to Unloading
     if ((branch == 2 || branch == 3 || branch == 6 || branch == 7 || branch == 9) && (d_new - d_old) * sign <= 0) {
         if (branch == 2 || branch == 3) {
             f_global[is] = f_old;
@@ -145,21 +145,6 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
         d_zero = d_local - f_local / k_local;
     }
 
-// Reloading to Unloading
-    // if ((branch == 6 || branch == 7 || branch == 9) && (d_new - d_old) * sign <= 0) {
-    //     d_local = d_old;
-    //     f_local = f_old;
-    //     if (branch == 2) {
-    //         k_local = (abs(f_global[is]) + f_crack) / (abs(d_global[is]) + d_crack);
-    //     } else {
-    //         k_local = (f_crack + f_yield) / (d_crack + d_yield) * pow((d_yield / abs(d_global[is])), unload_from_global_factor);
-    //     }
-    //     branch = 8;
-    //     k_local = k_local * unload_from_local_factor;
-    //     d_zero = d_local - f_local / k_local;
-    //     k_tangent = k_local;
-    // }
-
 // 4 and 5 are same branch
     if (branch == 5 && (d_new - d_zero) * sign <= 0) {
         branch = 4;
@@ -176,8 +161,8 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
         // -: 6
         if (abs(d_global[is]) <= d_crack) {
             branch = 5;
-            d_reload = d_zero + sign * f_crack / k_local;
-            f_reload = f_crack * sign;
+            d_unload = d_zero + sign * f_crack / k_local;
+            f_unload = f_crack * sign;
         } else if (abs(d_global[is]) <= d_yield) {
             branch = 7;
             const double k_to_global = f_global[is] / (d_global[is] - d_zero);
@@ -217,7 +202,7 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
         k_tangent = k_yield;
     }
 // 5 -> 2, 9
-    if (branch == 5 && (d_reload - d_new) * sign <= 0) {
+    if (branch == 5 && (d_unload - d_new) * sign <= 0) {
         if (abs(d_global[is]) <= d_crack && abs(d_global[3 - is]) <= d_yield) {
             branch = 2;
             k_tangent = k_yield;
@@ -226,7 +211,7 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
             f_global[is] = f_crack * sign;
             d_global[is] = d_crack * sign;
             k_tangent = f_global[is] / (d_global[is] - d_zero);
-            // %d_zero = d_yield * sign - f_yield * sign * (d_yield * sign - d_reload) / (f_yield * sign - f_reload);%%%%�o������ψʂƙ��f�͂𐳕��̂ǂ�����Ђъ���_�𒴂���܂łЂъ���_���L������悤�ɂ���
+            // %d_zero = d_yield * sign - f_yield * sign * (d_yield * sign - d_unload) / (f_yield * sign - f_unload);%%%%�o������ψʂƙ��f�͂𐳕��̂ǂ�����Ђъ���_�𒴂���܂łЂъ���_���L������悤�ɂ���
         }
     }
 // 8 -> 6, 9
@@ -315,9 +300,9 @@ int TakedaSlip::commitState(void)
     cd_new = d_new;
     cf_new = f_new;
     ck_tangent = k_tangent;
-    cf_reload = f_reload;
+    cf_unload = f_unload;
     cf_local = f_local;
-    cd_reload = d_reload;
+    cd_unload = d_unload;
     cd_local = d_local;
     cf_global = f_global;
     cd_global = d_global;
@@ -332,9 +317,9 @@ int TakedaSlip::revertToLastCommit(void)
     d_new = cd_new;
     f_new = cf_new;
     k_tangent = ck_tangent;
-    f_reload = cf_reload;
+    f_unload = cf_unload;
     f_local = cf_local;
-    d_reload = cd_reload;
+    d_unload = cd_unload;
     d_local = cd_local;
     f_global = cf_global;
     d_global = cd_global;
@@ -371,9 +356,9 @@ TakedaSlip::getCopy(void)
     theCopy->d_new = d_new;
     theCopy->f_new = f_new;
     theCopy->k_tangent = k_tangent;
-    theCopy->f_reload = f_reload;
+    theCopy->f_unload = f_unload;
     theCopy->f_local = f_local;
-    theCopy->d_reload = d_reload;
+    theCopy->d_unload = d_unload;
     theCopy->d_local = d_local;
     theCopy->f_global = f_global;
     theCopy->d_global = d_global;
@@ -385,9 +370,9 @@ TakedaSlip::getCopy(void)
     theCopy->cd_new = cd_new;
     theCopy->cf_new = cf_new;
     theCopy->ck_tangent = ck_tangent;
-    theCopy->cf_reload = cf_reload;
+    theCopy->cf_unload = cf_unload;
     theCopy->cf_local = cf_local;
-    theCopy->cd_reload = cd_reload;
+    theCopy->cd_unload = cd_unload;
     theCopy->cd_local = cd_local;
     theCopy->cf_global = cf_global;
     theCopy->cd_global = cd_global;
@@ -408,9 +393,9 @@ int TakedaSlip::sendSelf(int cTag, Channel &theChannel)
     data(13) = d_new;
     data(15) = f_new;
     data(16) = k_tangent;
-    data(17) = f_reload;
+    data(17) = f_unload;
     data(18) = f_local;
-    data(19) = d_reload;
+    data(19) = d_unload;
     data(20) = d_local;
     data(21) = f_global[1];
     data(22) = f_global[2];
@@ -425,9 +410,9 @@ int TakedaSlip::sendSelf(int cTag, Channel &theChannel)
     data(113) = cd_new;
     data(115) = cf_new;
     data(116) = ck_tangent;
-    data(117) = cf_reload;
+    data(117) = cf_unload;
     data(118) = cf_local;
-    data(119) = cd_reload;
+    data(119) = cd_unload;
     data(120) = cd_local;
     data(121) = cf_global[1];
     data(122) = cf_global[2];
@@ -460,9 +445,9 @@ int TakedaSlip::recvSelf(int cTag, Channel &theChannel, FEM_ObjectBroker &theBro
         d_new = data(13);
         f_new = data(15);
         k_tangent = data(16);
-        f_reload = data(17);
+        f_unload = data(17);
         f_local = data(18);
-        d_reload = data(19);
+        d_unload = data(19);
         d_local = data(20);
         f_global[1] = data(21);
         f_global[2] = data(22);
@@ -477,9 +462,9 @@ int TakedaSlip::recvSelf(int cTag, Channel &theChannel, FEM_ObjectBroker &theBro
         cd_new = data(113);
         cf_new = data(115);
         ck_tangent = data(116);
-        cf_reload = data(117);
+        cf_unload = data(117);
         cf_local = data(118);
-        cd_reload = data(119);
+        cd_unload = data(119);
         cd_local = data(120);
         cf_global[1] = data(121);
         cf_global[2] = data(122);

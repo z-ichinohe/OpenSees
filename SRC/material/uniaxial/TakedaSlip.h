@@ -62,9 +62,9 @@ private:
     double f_new, cf_new;
     double k_tangent, ck_tangent;
     double k_local, ck_local;
-    double f_reload, cf_reload;
+    double f_unload, cf_unload;
     double f_local, cf_local;
-    double d_reload, cd_reload;
+    double d_unload, cd_unload;
     double d_local, cd_local;
     double d_zero, cd_zero;
     double d_zero_from_local, cd_zero_from_local;
