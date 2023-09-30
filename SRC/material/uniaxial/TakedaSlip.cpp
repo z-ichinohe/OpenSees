@@ -132,6 +132,7 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
             k_unload[is] = (f_crack + f_yield) / (d_crack + d_yield) * pow((d_yield / abs(d_global[is])), unload_from_global_factor);
         }
         branch = 4;
+        k_tangent = k_unload[is];
         d_zero = d_old - f_old / k_unload[is];
     }
 
@@ -148,6 +149,7 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
 // 4 and 5 are same branch
     if (branch == 5 && (d_new - d_zero) * sign <= 0) {
         branch = 4;
+        // k_tangent = k_unload[is];
         is = d_new > d_old ? 1 : 2;
         sign = d_new > d_old ? 1 : -1;
     }
@@ -191,14 +193,15 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
                 k_tangent = f_global[is] / (d_global[is] - d_zero);
             } else {
                 branch = 6;
+                const double k_global = f_global[is] / d_global[is] * k_global_factor;
                 const double d_zero_from_global = d_global[3 - is] - f_global[3 - is] / k_unload[3 - is];
                 const double k_pinch = abs(f_global[is] / (d_zero_from_global - d_global[is])) * pow( abs(d_global[is] / (d_zero_from_global - d_global[is])), k_pinch_factor);
-                const double k_global = f_global[is] / d_global[is] * k_global_factor;
                 if (abs(k_pinch - k_global) <= error) {
                     d_pinch = d_zero;
                 } else {
                     d_pinch = (k_global * d_global[is] - k_pinch * d_zero - f_global[is]) / (k_global - k_pinch);
                 }
+                k_tangent = k_pinch;
             }
         }
     }
@@ -211,8 +214,9 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
     }
 // 5 -> 2, 9
     if (branch == 5 && (d_reload - d_new) * sign <= 0) {
-        if ((abs(d_global[is]) <= d_crack) && (abs(d_global[3 - is]) <= d_yield)) {
+        if (abs(d_global[is]) <= d_crack && abs(d_global[3 - is]) <= d_yield) {
             branch = 2;
+            k_tangent = k_yield;
         } else {
             branch = 9;
             f_global[is] = f_crack * sign;
@@ -225,6 +229,9 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
     if (branch == 8 && (d_local - d_new) * sign <= 0) {
         if (d_yield <= abs(d_global[is])) {
             branch = 6;
+            const double d_zero_from_global = d_global[3 - is] - f_global[3 - is] / k_unload[3 - is];
+            const double k_pinch = abs(f_global[is] / (d_zero_from_global - d_global[is])) * pow( abs(d_global[is] / (d_zero_from_global - d_global[is])), k_pinch_factor);
+            k_tangent = k_pinch;
         } else {
             branch = 9;
             k_tangent = f_global[is] / (d_global[is] - d_zero);
@@ -234,11 +241,15 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
 // 6 -> 7, 9
     if (branch == 6 && (d_pinch - d_new) * sign <= 0) {
         branch = 7;
+        const double k_global = f_global[is] / d_global[is] * k_global_factor;
+        const double d_zero_from_global = d_global[is] - f_global[is] / k_global;
+        k_tangent = k_global;
+        d_zero = d_zero_from_global;
     }
-    if (branch == 6 && (d_pinch - d_new) * sign <= 0) {
-        branch = 9;
-        k_tangent = f_global[is] / (d_global[is] - d_zero);
-    }
+    // if (branch == 6 && (d_pinch - d_new) * sign <= 0) {
+    //     branch = 9;
+    //     k_tangent = f_global[is] / (d_global[is] - d_zero);
+    // }
 // 7, 9 -> 2
     if ((branch == 7 || branch == 9) && (d_global[is] - d_new) * sign <= 0) {
         branch = 2;
@@ -246,10 +257,9 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
     }
 // Backbone
 // 1 -> 2
-    if (branch == 1 && d_crack - abs(d_new) <= 0)  {
+    if (branch == 1 && d_crack <= abs(d_new))  {
         branch = 2;
-        // is = d_new > 0 ? 1 : 2;
-        // sign = d_new > 0 ? 1 : -1;
+        k_tangent = k_yield;
     }
 // 2 -> 3
     if (branch == 2 && d_yield <= abs(d_new)) {
@@ -261,29 +271,20 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
     if (branch == 1) {
         f_new = k_crack * d_new;
     } else if (branch == 2) {
-        k_tangent = k_yield;
         f_new = sign * f_crack + (d_new - sign * d_crack) * k_yield;
     } else if (branch == 2 || branch == 3) {
         f_new = f_yield * sign + (d_new - d_yield * sign) * k_plastic;
     } else if (branch == 4) {
-        k_tangent = k_unload[is];
         f_new = f_global[is] + (d_new - d_global[is]) * k_unload[is];
     } else if (branch == 5) {
         f_new = (d_new - d_zero) * k_tangent;
     } else if (branch == 6) {
-        const double d_zero_from_global = d_global[3 - is] - f_global[3 - is] / k_unload[3 - is];
-        const double k_pinch = abs(f_global[is] / (d_zero_from_global - d_global[is])) * pow( abs(d_global[is] / (d_zero_from_global - d_global[is])), k_pinch_factor);
-        k_tangent = k_pinch;
-        f_new = k_pinch * (d_new - d_zero);
-    } else if (branch == 7) {
-        const double k_global = f_global[is] / d_global[is] * k_global_factor;
-        const double d_zero_from_global = d_global[is] - f_global[is] / k_global;
-        f_new = k_global * (d_new - d_zero_from_global);
-        k_tangent = k_global;
-        d_zero = d_zero_from_global;
+        f_new = k_tangent * (d_new - d_zero);
+    // } else if (branch == 7) {
+    //     f_new = k_global * (d_new - d_zero_from_global);
     } else if (branch == 8) {
         f_new = f_local + (d_new - d_local) * k_local;
-    } else if (branch == 9) {
+    } else if (branch == 9 || branch == 7) {
         f_new = k_tangent * (d_new - d_zero);
     }
     return 0;
