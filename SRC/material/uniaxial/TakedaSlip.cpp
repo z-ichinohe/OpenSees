@@ -123,8 +123,10 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
     int sign = f_old > 0 ? 1 : -1;
 
 // Reloading to Unloading
-    if ((branch == 2 || branch == 3 || branch == 4 || branch == 5) && (d_new - d_old) * sign <= 0) {
-        if (branch == 4 || branch == 5) {
+    bool on_backbone  = (branch == 4 || branch == 5);
+    if ((branch == 2 || branch == 3 || on_backbone) && (d_new - d_old) * sign <= 0) {
+        branch = 1;
+        if (on_backbone) {
             f_global[is] = f_old;
             d_global[is] = d_old;
         }
@@ -133,13 +135,9 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
         const double f_reload = d_yield > abs(d_global[is]) ? abs(f_global[is]) : f_yield;
         const double d_reload = d_yield > abs(d_global[is]) ? abs(d_global[is]) : d_yield;
         k_local = (f_reload + f_crack) / (d_reload + d_crack) * pow(d_reload / abs(d_global[is]), unload_from_global_factor);
-        if (branch == 4 || branch == 5) {
-            branch = 1;
-        } else {
-            branch = 18;
+        if (!on_backbone) {
             k_local *= unload_from_local_factor;
         }
-        branch = 1;
         k_tangent = k_local;
         d_zero = d_local - f_local / k_local;
     }
@@ -152,7 +150,7 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
     }
 
 // Reloading From Unloading
-    if ((branch == 1 || branch == 18) && (d_new - d_zero) * sign <= 0) {
+    if ((branch == 1) && (d_new - d_zero) * sign <= 0) {
         is = d_new > d_old ? 1 : 2;
         sign = d_new > d_old ? 1 : -1;
         // -Crack: 15
@@ -195,11 +193,6 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
     }
 
 // Unloading Branch to Reloading
-// 1 -> 4
-    // if (branch == 1 && (d_global[is] - d_new) * sign <= 0) {
-    //     branch = 4;
-    //     k_tangent = k_yield;
-    // }
 // 15 -> 3, 4
     if (branch == 15 && (d_unload - d_new) * sign <= 0) {
         if (abs(d_global[is]) <= d_crack && abs(d_global[3 - is]) <= d_yield) {
@@ -213,8 +206,8 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
             // %d_zero = d_yield * sign - f_yield * sign * (d_yield * sign - d_unload) / (f_yield * sign - f_unload);%%%%�o������ψʂƙ��f�͂𐳕��̂ǂ�����Ђъ���_�𒴂���܂łЂъ���_���L������悤�ɂ���
         }
     }
-// 18 -> 2, 3
-    if ((branch == 18 || branch == 1) && (d_local - d_new) * sign <= 0) {
+// 1 -> 2, 3
+    if (branch == 1 && (d_local - d_new) * sign <= 0) {
         if (d_yield <= abs(d_global[is])) {
             branch = 2;
             const double k_temp = (f_crack + f_yield) / (d_crack + d_yield) * pow((d_yield / abs(d_global[3 - is])), unload_from_global_factor);
@@ -231,9 +224,8 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
     if (branch == 2 && (d_pinch - d_new) * sign <= 0) {
         branch = 3;
         const double k_global = f_global[is] / d_global[is] * k_global_factor;
-        const double d_zero_from_global = d_global[is] - f_global[is] / k_global;
         k_tangent = k_global;
-        d_zero = d_zero_from_global;
+        d_zero = d_global[is] - f_global[is] / k_global;
     }
 // 3 -> 4
     if (branch == 3 && (d_global[is] - d_new) * sign <= 0) {
@@ -255,14 +247,15 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
 // Calculate Force
 // Backbone
     if (branch == 0) {
-        f_new = k_crack * d_new;
+        f_new = (d_new - 0) * k_crack;
     } else if (branch == 4) {
-        f_new = sign * f_crack + (d_new - sign * d_crack) * k_yield;
+        f_new = sign * f_yield + (d_new - sign * d_yield) * k_yield;
     } else if (branch == 5) {
-        f_new = f_yield * sign + (d_new - d_yield * sign) * k_plastic;
+        f_new = sign * f_yield + (d_new - sign * d_yield) * k_plastic;
 // Unloading
-    } else if (branch == 18 || branch == 1) {
+    } else if (branch == 1) {
         f_new = f_local + (d_new - d_local) * k_local;
+        // f_new = (d_new - d_zero) * k_local;
 // Reloading
     } else if (branch == 15 || branch == 2 || branch == 3) {
         f_new = (d_new - d_zero) * k_tangent;
