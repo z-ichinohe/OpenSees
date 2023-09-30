@@ -168,17 +168,7 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
     }
 
 // Reloading From Unloading
-    bool reload_flag = false;
-    if (branch == 4 && (d_new - d_zero) * sign <= 0) {
-        reload_flag = true;
-    }
-
-    if (branch == 8 && (d_new - d_zero) * sign <= 0) {
-        d_zero = d_zero;
-        reload_flag = true;
-    }
-
-    if (reload_flag) {
+    if ((branch == 4 || branch == 8) && (d_new - d_zero) * sign <= 0) {
         is = d_new > d_old ? 1 : 2;
         sign = d_new > d_old ? 1 : -1;
         // -Crack: 5
