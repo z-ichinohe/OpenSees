@@ -61,7 +61,6 @@ private:
     double d_new, cd_new;
     double f_new, cf_new;
     double k_tangent, ck_tangent;
-    std::array<double, 3> k_unload, ck_unload;
     double k_local, ck_local;
     double f_reload, cf_reload;
     double f_local, cf_local;

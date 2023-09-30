@@ -325,7 +325,6 @@ int TakedaSlip::commitState(void)
     cf_global = f_global;
     cd_global = d_global;
     cd_pinch = d_pinch;
-    ck_unload = k_unload;
     ck_local = k_local;
     return 0;
 }
@@ -343,7 +342,6 @@ int TakedaSlip::revertToLastCommit(void)
     f_global = cf_global;
     d_global = cd_global;
     d_pinch = cd_pinch;
-    k_unload = ck_unload;
     k_local = ck_local;
     return 0;
 }
@@ -359,8 +357,8 @@ int TakedaSlip::revertToStart(void)
     f_global[2] = cf_global[2] = - f_crack;
     d_global[1] = cd_global[1] = d_crack;
     d_global[2] = cd_global[2] = - d_crack;
-    k_unload[1] = ck_unload[1] = k_crack;
-    k_unload[2] = ck_unload[2] = k_crack;
+
+
     return 0;
 }
 
@@ -383,7 +381,7 @@ TakedaSlip::getCopy(void)
     theCopy->f_global = f_global;
     theCopy->d_global = d_global;
     theCopy->d_pinch = d_pinch;
-    theCopy->k_unload = k_unload;
+
     theCopy->k_local = k_local;
 
     theCopy->cbranch = cbranch;
@@ -397,7 +395,7 @@ TakedaSlip::getCopy(void)
     theCopy->cf_global = cf_global;
     theCopy->cd_global = cd_global;
     theCopy->cd_pinch = cd_pinch;
-    theCopy->ck_unload = ck_unload;
+
     theCopy->ck_local = ck_local;
     return theCopy;
 }
@@ -422,8 +420,8 @@ int TakedaSlip::sendSelf(int cTag, Channel &theChannel)
     data(23) = d_global[1];
     data(24) = d_global[2];
     data(25) = d_pinch;
-    data(26) = k_unload[1];
-    data(27) = k_unload[2];
+
+
     data(28) = k_local;
 
     data(111) = cbranch;
@@ -439,8 +437,8 @@ int TakedaSlip::sendSelf(int cTag, Channel &theChannel)
     data(123) = cd_global[1];
     data(124) = cd_global[2];
     data(125) = cd_pinch;
-    data(126) = ck_unload[1];
-    data(127) = ck_unload[2];
+
+
     data(128) = ck_local;
     res = theChannel.sendVector(this->getDbTag(), cTag, data);
     if (res < 0)
@@ -474,8 +472,8 @@ int TakedaSlip::recvSelf(int cTag, Channel &theChannel, FEM_ObjectBroker &theBro
         d_global[1] = data(23);
         d_global[2] = data(24);
         d_pinch = data(25);
-        k_unload[1] = data(26);
-        k_unload[2] = data(27);
+
+
         k_local = data(28);
 
         cbranch = data(111);
@@ -491,8 +489,8 @@ int TakedaSlip::recvSelf(int cTag, Channel &theChannel, FEM_ObjectBroker &theBro
         cd_global[1] = data(123);
         cd_global[2] = data(124);
         cd_pinch = data(125);
-        ck_unload[1] = data(126);
-        ck_unload[2] = data(127);
+
+
         ck_local = data(128);
     }
 
