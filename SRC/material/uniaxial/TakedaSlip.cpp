@@ -136,6 +136,7 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
         const double d_reload = d_yield > abs(d_global[is]) ? abs(d_global[is]) : d_yield;
         k_unload = (f_reload + f_crack) / (d_reload + d_crack) * pow(d_reload / abs(d_global[is]), unload_from_global_factor);
         if (!on_backbone) {
+            // ローカル除荷の場合に除荷剛性が非常に小さくなる。
             k_unload *= unload_from_local_factor;
         }
         k_tangent = k_unload;
@@ -162,22 +163,17 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
             }
             k_tangent = f_global[is] / (d_global[is] - d_zero);
         } else {
-            // ここでは正側を見てる
             const double k_from_global = f_global[is] / d_global[is] * k_global_factor;
             const double k_to_global = f_global[is] / (d_global[is] - d_zero);
             if (k_to_global > k_from_global) {
                 branch = 3;
                 k_tangent = k_to_global;
             } else {
-                branch = 2;
                 const double k_unload_global = (f_crack + f_yield) / (d_crack + d_yield) * pow((d_yield / abs(d_global[3 - is])), unload_from_global_factor);
                 const double d_zero_global = d_global[3 - is] - f_global[3 - is] / k_unload_global;
                 const double k_pinch = f_global[is] / (d_global[is] - d_zero_global) * pow(d_global[is] / (d_global[is] - d_zero_global), k_pinch_factor);
-                // if (abs(k_pinch - k_from_global) <= error) {
-                //     d_pinch = d_zero;
-                // } else {
+                branch = 2;
                 d_pinch = (k_from_global * d_global[is] - k_pinch * d_zero - f_global[is]) / (k_from_global - k_pinch);
-                // }
                 f_pinch = (d_pinch - d_zero) * k_pinch;
                 k_tangent = k_pinch;
             }
