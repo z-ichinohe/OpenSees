@@ -153,11 +153,11 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
 
     bool reload_flag = false;
 // Reloading From Unloading
-    if (branch == 4 && (d_new - d_zero) * sign < 0) {
+    if (branch == 4 && (d_new - d_zero) * sign <= 0) {
         reload_flag = true;
     }
 
-    if (branch == 8 && (d_new - d_zero_from_local) * sign < 0) {
+    if (branch == 8 && (d_new - d_zero_from_local) * sign <= 0) {
         d_zero = d_zero_from_local;
         reload_flag = true;
     }
@@ -176,7 +176,7 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
             branch = 9;
             const double k_to_global = f_global[is] / (d_global[is] - d_zero);
             const double k_to_yield = f_yield * sign / (d_yield * sign - d_zero);
-            if (k_to_global < k_to_yield) {
+            if (k_to_global <= k_to_yield) {
                 d_global[is] = d_yield * sign;
                 f_global[is] = f_yield * sign;
             }
@@ -193,7 +193,7 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
                 const double d_zero_from_global = d_global[3 - is] - f_global[3 - is] / k_unload[3 - is];
                 const double k_pinch = abs(f_global[is] / (d_zero_from_global - d_global[is])) * pow( abs(d_global[is] / (d_zero_from_global - d_global[is])), k_pinch_factor);
                 const double k_global = f_global[is] / d_global[is] * k_global_factor;
-                if (abs(k_pinch - k_global) < error) {
+                if (abs(k_pinch - k_global) <= error) {
                     d_pinch = d_zero;
                 } else {
                     d_pinch = (k_global * d_global[is] - k_pinch * d_zero - f_global[is]) / (k_global - k_pinch);
@@ -228,7 +228,7 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
         }
     }
     if (branch == 8 && (d_local - d_new) * sign <= 0) {
-        if (abs(d_global[is]) > d_yield) {
+        if (d_yield <= abs(d_global[is])) {
             branch = 6;
         } else {
             branch = 9;
@@ -242,7 +242,7 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
         branch = 9;
         k_tangent = f_global[is] / (d_global[is] - d_zero);
     }
-    if ((branch == 7 || branch == 9) && (d_global[is] - d_new) * sign < 0) {
+    if ((branch == 7 || branch == 9) && (d_global[is] - d_new) * sign <= 0) {
         branch = 2;
         k_tangent = k_yield;
     }
