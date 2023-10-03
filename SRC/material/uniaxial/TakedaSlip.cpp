@@ -142,7 +142,7 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
     }
 
 // Forward to Reloading from Unloading
-    if (branch == 1 && (d_new - d_zero) * sign <= 0 && d_crack < abs(d_global[is])) {
+    if (branch == 1 && (d_new - d_zero) * sign <= 0) {
         is = d_new > d_old ? 1 : 2;
         sign = d_new > d_old ? 1 : -1;
         if (abs(d_global[is]) <= d_crack) {
@@ -173,20 +173,6 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
                 f_pinch = (d_pinch - d_zero) * k_pinch;
                 k_tangent = k_pinch;
             }
-        }
-    }
-
-    if (branch == 1 && abs(d_global[is]) <= d_crack && f_crack <= abs((d_new - d_zero) * k_tangent)) {
-        if (abs(d_global[is]) <= d_crack && abs(d_global[3 - is]) <= d_yield) {
-            branch = 4;
-            k_tangent = k_yield;
-        } else {
-            // p_unloadからp_crackに向かうわけではないので、段差が生じる
-            branch = 3;
-            f_global[is] = f_crack * sign;
-            d_global[is] = d_crack * sign;
-            k_tangent = f_global[is] / (d_global[is] - d_zero);
-            // d_zero = d_yield * sign - f_yield * sign * (d_yield * sign - d_reload) / (f_yield * sign - f_reload);
         }
     }
 
