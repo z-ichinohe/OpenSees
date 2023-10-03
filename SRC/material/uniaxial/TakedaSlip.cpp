@@ -148,6 +148,7 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
         d_pinch = d_zero;
         f_pinch = 0;
         if (abs(d_global[is]) <= d_crack) {
+            // 反対側でひび割れていない限り、除荷剛性で弾性を示し続ける
             // 降伏している場合、p_crackに向かわない
             branch = 15;
         } else if (abs(d_global[is]) <= d_yield) {
@@ -178,7 +179,7 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
         }
     }
 
-    if (branch == 15 && abs((d_new - d_zero) * k_tangent) >= f_crack) {
+    if (branch == 15 && (d_zero + sign * f_crack / k_tangent - d_new) * sign <= 0) {
         if (abs(d_global[is]) <= d_crack && abs(d_global[3 - is]) <= d_yield) {
             branch = 4;
             k_tangent = k_yield;
