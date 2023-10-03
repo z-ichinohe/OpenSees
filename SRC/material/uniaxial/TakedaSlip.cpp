@@ -18,20 +18,20 @@
 ****
 *********************************************************************/
 
-#include < math.h >
-#include < TakedaSlip.h >
-#include < elementAPI.h >
-#include < Vector.h >
-#include < Channel.h >
-#include < OPS_Globals.h >
-#include < algorithm >
+#include <math.h>
+#include <TakedaSlip.h>
+#include <elementAPI.h>
+#include <Vector.h>
+#include <Channel.h>
+#include <OPS_Globals.h>
+#include <algorithm>
 
-#include < cstdlib >
-#include < iomanip >
-#include < iostream >
-#include < stdio.h >
-#include < stdlib.h >
-#include < string >
+#include <cstdlib>
+#include <iomanip>
+#include <iostream>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string>
 using namespace std;
 
 static int numTakedaSlipMaterials = 0;
