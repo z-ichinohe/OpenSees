@@ -68,6 +68,19 @@ private:
     std::array<double, 3> f_global, cf_global;
     std::array<double, 3> d_global, cd_global;
 
+    double pos_f_global, cpos_f_global;
+    double pos_d_global, cpos_d_global;
+    double neg_f_global, cneg_f_global;
+    double neg_d_global, cneg_d_global;
+    double pos_f_crack;
+    double pos_d_crack;
+    double neg_f_crack;
+    double neg_d_crack;
+    double pos_f_yield;
+    double pos_d_yield;
+    double neg_f_yield;
+    double neg_d_yield;
+
     double f_local, cf_local;
     double d_local, cd_local;
 
