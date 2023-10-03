@@ -71,8 +71,8 @@ private:
     double f_local, cf_local;
     double d_local, cd_local;
 
-    double f_unload, cf_unload;
-    double d_unload, cd_unload;
+    double f_reload, cf_reload;
+    double d_reload, cd_reload;
 
     double f_pinch, cf_pinch;
     double d_pinch, cd_pinch;
