@@ -150,6 +150,7 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
             branch = 15;
         } else if (abs(d_global[is]) <= d_yield) {
             branch = 3;
+            d_pinch = d_zero;
             const double k_to_global = f_global[is] / (d_global[is] - d_zero);
             const double k_to_yield = f_yield * sign / (d_yield * sign - d_zero);
             // 現在降伏ブランチに負勾配を設定しているので問題はないが、一般的には不等号が逆
@@ -163,6 +164,7 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
             const double k_to_global = f_global[is] / (d_global[is] - d_zero);
             if (k_to_global > k_from_global) {
                 branch = 3;
+                d_pinch = d_zero;
                 k_tangent = k_to_global;
             } else {
                 branch = 2;
@@ -313,6 +315,7 @@ int TakedaSlip::revertToStart(void)
     d_global[2] = cd_global[2] = - d_crack;
 
     d_zero = cd_zero = 0;
+    f_pinch = cf_pinch = 0;
 
     return 0;
 }
