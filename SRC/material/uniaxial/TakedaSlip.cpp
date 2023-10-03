@@ -164,7 +164,6 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
             const double k_to_global = f_global[is] / (d_global[is] - d_zero);
             if (k_to_global > k_from_global) {
                 branch = 3;
-                d_pinch = d_zero;
                 k_tangent = k_to_global;
             } else {
                 branch = 2;
