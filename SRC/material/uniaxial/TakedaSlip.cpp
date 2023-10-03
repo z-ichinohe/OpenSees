@@ -131,14 +131,12 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
         }
         d_local = d_old;
         f_local = f_old;
-        const double f_reload = d_yield > abs(d_global[is]) ? abs(f_global[is]) : f_yield;
-        const double d_reload = d_yield > abs(d_global[is]) ? abs(d_global[is]) : d_yield;
-        double k_unload = (f_reload + f_crack) / (d_reload + d_crack) * pow(d_reload / abs(d_global[is]), unload_from_global_factor);
+        const double f_target = d_yield > abs(d_global[is]) ? abs(f_global[is]) : f_yield;
+        const double d_target = d_yield > abs(d_global[is]) ? abs(d_global[is]) : d_yield;
+        double k_unload = (f_target + f_crack) / (d_target + d_crack) * pow(d_target / abs(d_global[is]), unload_from_global_factor);
         if (!on_backbone) {
-            // ローカル除荷の場合に除荷剛性が非常に小さくなる。
             k_unload *= unload_from_local_factor;
         }
-        // k_tangent = k_tangent;
         d_zero = d_local - f_local / k_unload;
         k_tangent = k_unload;
     }
@@ -150,8 +148,6 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
         if (abs(d_global[is]) <= d_crack) {
             // 降伏している場合、p_crackに向かわない
             branch = 15;
-            d_reload = d_zero + sign * f_crack / k_tangent;
-            f_reload = f_crack * sign;
         } else if (abs(d_global[is]) <= d_yield) {
             branch = 3;
             const double k_to_global = f_global[is] / (d_global[is] - d_zero);
@@ -180,7 +176,8 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
         }
     }
 
-    if (branch == 15 && (d_reload - d_new) * sign <= 0) {
+    if (branch == 15 && abs((d_new - d_zero) * k_tangent) >= f_crack) {
+    // if (branch == 15 && (d_zero + sign * f_crack / k_tangent - d_new) * sign <= 0) {
         if (abs(d_global[is]) <= d_crack && abs(d_global[3 - is]) <= d_yield) {
             branch = 4;
             k_tangent = k_yield;
@@ -214,25 +211,27 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
 // 2 -> 3
     if (branch == 2 && (d_pinch - d_new) * sign <= 0) {
         branch = 3;
-        const double k_global = (f_global[is] - f_pinch) / (d_global[is] - d_pinch);
-        k_tangent = k_global;
-        d_zero = d_global[is] - f_global[is] / k_global;
+        k_tangent = (f_global[is] - f_pinch) / (d_global[is] - d_pinch);
+        d_zero = d_global[is] - f_global[is] / k_tangent;
     }
 // 3 -> 4
     if (branch == 3 && (d_global[is] - d_new) * sign <= 0) {
         branch = 4;
         k_tangent = k_yield;
+        d_zero = d_yield * sign - f_yield * sign / k_tangent;
     }
 // Backbone
 // 0 -> 4
     if (branch == 0 && d_crack <= abs(d_new))  {
         branch = 4;
         k_tangent = k_yield;
+        d_zero = d_yield * sign - f_yield * sign / k_tangent;
     }
 // 4 -> 5
     if (branch == 4 && d_yield <= abs(d_new)) {
         branch = 5;
         k_tangent = k_plastic;
+        d_zero = d_yield * sign - f_yield * sign / k_tangent;
     }
 
 // Calculate Force
