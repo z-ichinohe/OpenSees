@@ -328,6 +328,7 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
     } else if (branch == 15 || branch == 16) {
         f_new = neg_f_yield + (d_new - neg_d_yield) * k_tangent;
     }
+    f_new = (d_new - d_zero) * k_tangent;
     return 0;
 }
 
