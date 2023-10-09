@@ -517,6 +517,10 @@ int TakedaSlip::revertToStart(void)
     pos_d_global = cpos_d_global = pos_d_crack = d_crack;
     neg_f_global = cneg_f_global = neg_f_crack = - f_crack;
     neg_d_global = cneg_d_global = neg_d_crack = - d_crack;
+    pos_f_yield = f_yield;
+    pos_d_yield = d_yield;
+    neg_f_yield = - f_yield;
+    neg_d_yield = - d_yield;
 
     d_zero = cd_zero = 0;
     f_pinch = cf_pinch = 0;
