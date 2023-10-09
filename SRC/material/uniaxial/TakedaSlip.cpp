@@ -312,7 +312,7 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
     f_new = (d_new - d_zero) * k_tangent;
 
     if (branch != ex_branch) {
-        // std::cout << ex_branch << " -> " << branch << "\n";
+        std::cout << ex_branch << " -> " << branch << "\n";
     }
 
     return 0;
