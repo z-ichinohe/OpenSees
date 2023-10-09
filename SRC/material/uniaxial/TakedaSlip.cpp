@@ -157,8 +157,6 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
 // Forward to Reloading from Unloading
 // Towards Positive
     if (branch == 11 && d_zero < d_new) {
-        d_pinch = d_zero;
-        f_pinch = 0;
         if (pos_d_global <= pos_d_crack) {
             branch = 2;
         } else if (pos_d_global < pos_d_yield) {
@@ -169,12 +167,16 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
                 pos_d_global = pos_d_yield;
                 pos_f_global = pos_f_yield;
             }
+            d_pinch = d_zero;
+            f_pinch = 0;
             k_tangent = pos_f_global / (pos_d_global - d_zero);
         } else {
             const double k_from_global = pos_f_global / pos_d_global * k_global_factor;
             const double k_to_global = pos_f_global / (pos_d_global - d_zero);
             if (k_to_global > k_from_global) {
                 branch = 4;
+                d_pinch = d_zero;
+                f_pinch = 0;
                 k_tangent = k_to_global;
             } else {
                 branch = 3;
@@ -194,8 +196,6 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
     }
 // Towards Negative
     if (branch == 1 && d_new < d_zero) {
-        d_pinch = d_zero;
-        f_pinch = 0;
         if (neg_d_crack <= neg_d_global) {
             branch = 12;
         } else if (neg_d_yield < neg_d_global) {
@@ -206,12 +206,16 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
                 neg_d_global = neg_d_yield;
                 neg_f_global = neg_f_yield;
             }
+            d_pinch = d_zero;
+            f_pinch = 0;
             k_tangent = neg_f_global / (neg_d_global - d_zero);
         } else {
             const double k_from_global = neg_f_global / neg_d_global * k_global_factor;
             const double k_to_global = neg_f_global / (neg_d_global - d_zero);
             if (k_to_global > k_from_global) {
                 branch = 14;
+                d_pinch = d_zero;
+                f_pinch = 0;
                 k_tangent = k_to_global;
             } else {
                 branch = 13;
