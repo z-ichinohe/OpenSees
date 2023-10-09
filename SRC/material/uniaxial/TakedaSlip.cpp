@@ -118,6 +118,7 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
     const double d_old = d_new;
     const double f_old = f_new;
     d_new = strain;
+    const int ex_branch = branch;
 
 // Unloading
 // Positive
@@ -156,8 +157,8 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
         if (!on_backbone) {
             k_unload *= unload_from_local_factor;
         }
-        d_zero = d_local - f_local / k_unload;
         k_tangent = k_unload;
+        d_zero = d_local - f_local / k_tangent;
     }
 
 // Forward to Reloading from Unloading
@@ -192,9 +193,12 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
                 k_tangent = k_pinch;
             }
         }
+        // d_zero remained
     }
     if (branch == 12 && d_zero < d_new) {
         branch = 1;
+        // k_tangent remained
+        // d_zero remained
     }
 // Towards Negative
     if (branch == 1 && d_new < d_zero) {
@@ -227,6 +231,7 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
                 k_tangent = k_pinch;
             }
         }
+        // d_zero remained
     }
     if (branch == 2 && d_new < d_zero) {
         branch = 11;
@@ -254,6 +259,7 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
             pos_f_global = pos_f_crack;
             pos_d_global = pos_d_crack;
             k_tangent = pos_f_global / (pos_d_global - d_zero);
+            // d_zero remained
         }
     }
     if (branch == 3 && d_pinch < d_new) {
@@ -261,16 +267,16 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
         k_tangent = (pos_f_global - f_pinch) / (pos_d_global - d_pinch);
         d_zero = pos_d_global - pos_f_global / k_tangent;
     }
-    if (branch == 4 && pos_d_global < d_new) {
+    if ((branch == 0 || branch == 4) && pos_d_global < d_new) {
         branch = 5;
         k_tangent = k_yield;
         d_zero = pos_d_yield - pos_f_yield / k_tangent;
     }
-    if (branch == 0 && pos_d_crack < d_new)  {
-        branch = 5;
-        k_tangent = k_yield;
-        d_zero = pos_d_yield - pos_f_yield / k_tangent;
-    }
+    // if (branch == 0 && pos_d_crack < d_new)  {
+    //     branch = 5;
+    //     k_tangent = k_yield;
+    //     d_zero = pos_d_yield - pos_f_yield / k_tangent;
+    // }
     if (branch == 5 && pos_d_yield < d_new) {
         branch = 6;
         k_tangent = k_plastic;
@@ -297,6 +303,7 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
             neg_f_global = neg_f_crack;
             neg_d_global = neg_d_crack;
             k_tangent = neg_f_global / (neg_d_global - d_zero);
+            // d_zero remained
         }
     }
     if (branch == 13 && d_new < d_pinch) {
@@ -304,16 +311,16 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
         k_tangent = (neg_f_global - f_pinch) / (neg_d_global - d_pinch);
         d_zero = neg_d_global - neg_f_global / k_tangent;
     }
-    if (branch == 14 && d_new < neg_d_global) {
+    if ((branch == 0 || branch == 14) && d_new < neg_d_global) {
         branch = 15;
         k_tangent = k_yield;
         d_zero = neg_d_yield - neg_f_yield / k_tangent;
     }
-    if (branch == 0 && d_new < neg_d_crack)  {
-        branch = 15;
-        k_tangent = k_yield;
-        d_zero = neg_d_yield - neg_f_yield / k_tangent;
-    }
+    // if (branch == 0 && d_new < neg_d_crack)  {
+    //     branch = 15;
+    //     k_tangent = k_yield;
+    //     d_zero = neg_d_yield - neg_f_yield / k_tangent;
+    // }
     if (branch == 15 && d_new < neg_d_yield) {
         branch = 16;
         k_tangent = k_plastic;
@@ -321,14 +328,19 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
     }
 
 // Calculate Force
-    if (branch == 0 || branch == 1 || branch == 2 || branch == 3 || branch == 4 || branch == 11 || branch == 12 || branch == 13 || branch == 14) {
-        f_new = (d_new - d_zero) * k_tangent;
-    } else if (branch == 5 || branch == 6) {
-        f_new = pos_f_yield + (d_new - pos_d_yield) * k_tangent;
-    } else if (branch == 15 || branch == 16) {
-        f_new = neg_f_yield + (d_new - neg_d_yield) * k_tangent;
-    }
+    // if (branch == 0 || branch == 1 || branch == 2 || branch == 3 || branch == 4 || branch == 11 || branch == 12 || branch == 13 || branch == 14) {
+    //     f_new = (d_new - d_zero) * k_tangent;
+    // } else if (branch == 5 || branch == 6) {
+    //     f_new = pos_f_yield + (d_new - pos_d_yield) * k_tangent;
+    // } else if (branch == 15 || branch == 16) {
+    //     f_new = neg_f_yield + (d_new - neg_d_yield) * k_tangent;
+    // }
     f_new = (d_new - d_zero) * k_tangent;
+
+    if (branch != ex_branch) {
+            std::cout << ex_branch << " -> " << branch << "\n";
+    }
+
     return 0;
 }
 
