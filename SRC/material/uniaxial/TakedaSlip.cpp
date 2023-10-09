@@ -179,7 +179,6 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
         } else {
             const double k_from_global = pos_f_global / pos_d_global * k_global_factor;
             const double k_to_global = pos_f_global / (pos_d_global - d_zero);
-            std::cout << " 11 -> 3, 4 " << k_to_global << " > " << k_from_global << "\n";
             if (k_to_global > k_from_global) {
                 branch = 4;
                 k_tangent = k_to_global;
@@ -191,6 +190,7 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
                 d_pinch = (k_from_global * pos_d_global - k_pinch * d_zero - pos_f_global) / (k_from_global - k_pinch);
                 f_pinch = (d_pinch - d_zero) * k_pinch;
                 k_tangent = k_pinch;
+                std::cout << "  3 k_pinch " << k_pinch << " d_pinch " << d_pinch << " d_zero " << d_zero << "\n";
             }
         }
         // d_zero remained
@@ -218,7 +218,6 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
         } else {
             const double k_from_global = neg_f_global / neg_d_global * k_global_factor;
             const double k_to_global = neg_f_global / (neg_d_global - d_zero);
-            std::cout << " 1 -> 13, 14 " << k_to_global << " > " << k_from_global << "\n";
             if (k_to_global > k_from_global) {
                 branch = 14;
                 k_tangent = k_to_global;
@@ -230,6 +229,7 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
                 d_pinch = (k_from_global * neg_d_global - k_pinch * d_zero - neg_f_global) / (k_from_global - k_pinch);
                 f_pinch = (d_pinch - d_zero) * k_pinch;
                 k_tangent = k_pinch;
+                std::cout << " 13 k_pinch " << k_pinch << " d_pinch " << d_pinch << " d_zero " << d_zero << "\n";
             }
         }
         // d_zero remained
