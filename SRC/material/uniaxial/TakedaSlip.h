@@ -29,8 +29,6 @@
 #define TakedaSlip_h
 
 #include <UniaxialMaterial.h>
-#include <array>
-#include <tuple>
 
 class TakedaSlip : public UniaxialMaterial
 {
@@ -65,9 +63,6 @@ private:
     double f_new, cf_new;
     double d_new, cd_new;
 
-    std::array<double, 3> f_global, cf_global;
-    std::array<double, 3> d_global, cd_global;
-
     double pos_f_global, cpos_f_global;
     double pos_d_global, cpos_d_global;
     double neg_f_global, cneg_f_global;
@@ -89,8 +84,6 @@ private:
 
     double d_zero, cd_zero;
 
-    double f_crack;
-    double f_yield;
     const double d_crack;
     const double d_yield;
     const double k_crack;
