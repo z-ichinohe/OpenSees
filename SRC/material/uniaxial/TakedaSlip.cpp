@@ -118,29 +118,30 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
     const double d_old = d_new;
     const double f_old = f_new;
     d_new = strain;
-    int is = f_old > 0 ? 1 : 2;
-    int sign = f_old > 0 ? 1 : -1;
+    // int is = f_old > 0 ? 1 : 2;
+    // int sign = f_old > 0 ? 1 : -1;
 
 // Unloading
-    bool on_backbone  = (branch == 25 || branch == 26);
-    if ((branch == 23 || branch == 24 || on_backbone) && (d_new - d_old) * sign <= 0) {
-        branch = 21;
-        if (on_backbone) {
-            f_global[is] = f_old;
-            d_global[is] = d_old;
-        }
-        d_local = d_old;
-        f_local = f_old;
-        const double f_target = d_yield > abs(d_global[is]) ? abs(f_global[is]) : f_yield;
-        const double d_target = d_yield > abs(d_global[is]) ? abs(d_global[is]) : d_yield;
-        double k_unload = (f_target + f_crack) / (d_target + d_crack) * pow(d_target / abs(d_global[is]), unload_from_global_factor);
-        if (!on_backbone) {
-            k_unload *= unload_from_local_factor;
-        }
-        d_zero = d_local - f_local / k_unload;
-        k_tangent = k_unload;
-    }
+    // bool on_backbone  = (branch == 25 || branch == 26);
+    // if ((branch == 23 || branch == 24 || on_backbone) && (d_new - d_old) * sign <= 0) {
+    //     branch = 21;
+    //     if (on_backbone) {
+    //         f_global[is] = f_old;
+    //         d_global[is] = d_old;
+    //     }
+    //     d_local = d_old;
+    //     f_local = f_old;
+    //     const double f_target = d_yield > abs(d_global[is]) ? abs(f_global[is]) : f_yield;
+    //     const double d_target = d_yield > abs(d_global[is]) ? abs(d_global[is]) : d_yield;
+    //     double k_unload = (f_target + f_crack) / (d_target + d_crack) * pow(d_target / abs(d_global[is]), unload_from_global_factor);
+    //     if (!on_backbone) {
+    //         k_unload *= unload_from_local_factor;
+    //     }
+    //     d_zero = d_local - f_local / k_unload;
+    //     k_tangent = k_unload;
+    // }
 // Positive
+    bool on_backbone;
     on_backbone = (branch == 5 || branch == 6);
     if ((branch == 3 || branch == 4 || on_backbone) && d_new < d_old) {
         branch = 1;
@@ -180,47 +181,47 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
     }
 
 // Forward to Reloading from Unloading
-    if (branch == 21 && (d_new - d_zero) * sign <= 0) {
-        is = d_new > d_old ? 1 : 2;
-        sign = d_new > d_old ? 1 : -1;
-        d_pinch = d_zero;
-        f_pinch = 0;
-        if (abs(d_global[is]) <= d_crack) {
-            // 反対側でひび割れていない限り、除荷剛性で弾性を示し続ける
-            // 降伏している場合、p_crackに向かわない
-            branch = 22;
-        } else if (abs(d_global[is]) <= d_yield) {
-            branch = 24;
-            const double k_to_global = f_global[is] / (d_global[is] - d_zero);
-            const double k_to_yield = f_yield * sign / (d_yield * sign - d_zero);
-            // 現在降伏ブランチに負勾配を設定しているので問題はないが、一般的には不等号が逆
-            if (k_to_global <= k_to_yield) {
-                d_global[is] = d_yield * sign;
-                f_global[is] = f_yield * sign;
-            }
-            k_tangent = f_global[is] / (d_global[is] - d_zero);
-        } else {
-            const double k_from_global = f_global[is] / d_global[is] * k_global_factor;
-            const double k_to_global = f_global[is] / (d_global[is] - d_zero);
-            if (k_to_global > k_from_global) {
-                branch = 24;
-                k_tangent = k_to_global;
-            } else {
-                branch = 23;
-                const double k_unload_global = (f_crack + f_yield) / (d_crack + d_yield) * pow((d_yield / abs(d_global[3 - is])), unload_from_global_factor);
-                const double d_zero_global = d_global[3 - is] - f_global[3 - is] / k_unload_global;
-                const double k_pinch = f_global[is] / (d_global[is] - d_zero_global) * pow(d_global[is] / (d_global[is] - d_zero_global), k_pinch_factor);
-                d_pinch = (k_from_global * d_global[is] - k_pinch * d_zero - f_global[is]) / (k_from_global - k_pinch);
-                f_pinch = (d_pinch - d_zero) * k_pinch;
-                k_tangent = k_pinch;
-            }
-        }
-    }
-    if (branch == 22 && (d_new - d_zero) * sign <= 0) {
-        branch = 21;
-        is = d_new > d_old ? 1 : 2;
-        sign = d_new > d_old ? 1 : -1;
-    }
+    // if (branch == 21 && (d_new - d_zero) * sign <= 0) {
+    //     is = d_new > d_old ? 1 : 2;
+    //     sign = d_new > d_old ? 1 : -1;
+    //     d_pinch = d_zero;
+    //     f_pinch = 0;
+    //     if (abs(d_global[is]) <= d_crack) {
+    //         // 反対側でひび割れていない限り、除荷剛性で弾性を示し続ける
+    //         // 降伏している場合、p_crackに向かわない
+    //         branch = 22;
+    //     } else if (abs(d_global[is]) <= d_yield) {
+    //         branch = 24;
+    //         const double k_to_global = f_global[is] / (d_global[is] - d_zero);
+    //         const double k_to_yield = f_yield * sign / (d_yield * sign - d_zero);
+    //         // 現在降伏ブランチに負勾配を設定しているので問題はないが、一般的には不等号が逆
+    //         if (k_to_global <= k_to_yield) {
+    //             d_global[is] = d_yield * sign;
+    //             f_global[is] = f_yield * sign;
+    //         }
+    //         k_tangent = f_global[is] / (d_global[is] - d_zero);
+    //     } else {
+    //         const double k_from_global = f_global[is] / d_global[is] * k_global_factor;
+    //         const double k_to_global = f_global[is] / (d_global[is] - d_zero);
+    //         if (k_to_global > k_from_global) {
+    //             branch = 24;
+    //             k_tangent = k_to_global;
+    //         } else {
+    //             branch = 23;
+    //             const double k_unload_global = (f_crack + f_yield) / (d_crack + d_yield) * pow((d_yield / abs(d_global[3 - is])), unload_from_global_factor);
+    //             const double d_zero_global = d_global[3 - is] - f_global[3 - is] / k_unload_global;
+    //             const double k_pinch = f_global[is] / (d_global[is] - d_zero_global) * pow(d_global[is] / (d_global[is] - d_zero_global), k_pinch_factor);
+    //             d_pinch = (k_from_global * d_global[is] - k_pinch * d_zero - f_global[is]) / (k_from_global - k_pinch);
+    //             f_pinch = (d_pinch - d_zero) * k_pinch;
+    //             k_tangent = k_pinch;
+    //         }
+    //     }
+    // }
+    // if (branch == 22 && (d_new - d_zero) * sign <= 0) {
+    //     branch = 21;
+    //     is = d_new > d_old ? 1 : 2;
+    //     sign = d_new > d_old ? 1 : -1;
+    // }
 // Towards Positive
     if (branch == 11 && d_zero < d_new) {
         d_pinch = d_zero;
@@ -293,47 +294,47 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
     }
 
 // Reloading
-    if (branch == 21 && (d_local - d_new) * sign <= 0) {
-        if (d_yield <= abs(d_global[is])) {
-            branch = 23;
-            k_tangent = (f_pinch - f_local) / (d_pinch - d_local);
-        } else {
-            branch = 24;
-            k_tangent = (f_global[is] - f_local) / (d_global[is] - d_local);
-        }
-        d_zero = d_local - f_local / k_tangent;
-    }
-    if (branch == 22 && (d_zero + sign * f_crack / k_tangent - d_new) * sign <= 0) {
-        if (abs(d_global[is]) <= d_crack && abs(d_global[3 - is]) <= d_yield) {
-            branch = 25;
-            k_tangent = k_yield;
-        } else {
-            branch = 24;
-            f_global[is] = f_crack * sign;
-            d_global[is] = d_crack * sign;
-            k_tangent = f_global[is] / (d_global[is] - d_zero);
-        }
-    }
-    if (branch == 23 && (d_pinch - d_new) * sign <= 0) {
-        branch = 24;
-        k_tangent = (f_global[is] - f_pinch) / (d_global[is] - d_pinch);
-        d_zero = d_global[is] - f_global[is] / k_tangent;
-    }
-    if (branch == 24 && (d_global[is] - d_new) * sign <= 0) {
-        branch = 25;
-        k_tangent = k_yield;
-        d_zero = d_yield * sign - f_yield * sign / k_tangent;
-    }
-    if (branch == 20 && d_crack <= abs(d_new))  {
-        branch = 25;
-        k_tangent = k_yield;
-        d_zero = d_yield * sign - f_yield * sign / k_tangent;
-    }
-    if (branch == 25 && d_yield <= abs(d_new)) {
-        branch = 26;
-        k_tangent = k_plastic;
-        d_zero = d_yield * sign - f_yield * sign / k_tangent;
-    }
+    // if (branch == 21 && (d_local - d_new) * sign <= 0) {
+    //     if (d_yield <= abs(d_global[is])) {
+    //         branch = 23;
+    //         k_tangent = (f_pinch - f_local) / (d_pinch - d_local);
+    //     } else {
+    //         branch = 24;
+    //         k_tangent = (f_global[is] - f_local) / (d_global[is] - d_local);
+    //     }
+    //     d_zero = d_local - f_local / k_tangent;
+    // }
+    // if (branch == 22 && (d_zero + sign * f_crack / k_tangent - d_new) * sign <= 0) {
+    //     if (abs(d_global[is]) <= d_crack && abs(d_global[3 - is]) <= d_yield) {
+    //         branch = 25;
+    //         k_tangent = k_yield;
+    //     } else {
+    //         branch = 24;
+    //         f_global[is] = f_crack * sign;
+    //         d_global[is] = d_crack * sign;
+    //         k_tangent = f_global[is] / (d_global[is] - d_zero);
+    //     }
+    // }
+    // if (branch == 23 && (d_pinch - d_new) * sign <= 0) {
+    //     branch = 24;
+    //     k_tangent = (f_global[is] - f_pinch) / (d_global[is] - d_pinch);
+    //     d_zero = d_global[is] - f_global[is] / k_tangent;
+    // }
+    // if (branch == 24 && (d_global[is] - d_new) * sign <= 0) {
+    //     branch = 25;
+    //     k_tangent = k_yield;
+    //     d_zero = d_yield * sign - f_yield * sign / k_tangent;
+    // }
+    // if (branch == 20 && d_crack <= abs(d_new))  {
+    //     branch = 25;
+    //     k_tangent = k_yield;
+    //     d_zero = d_yield * sign - f_yield * sign / k_tangent;
+    // }
+    // if (branch == 25 && d_yield <= abs(d_new)) {
+    //     branch = 26;
+    //     k_tangent = k_plastic;
+    //     d_zero = d_yield * sign - f_yield * sign / k_tangent;
+    // }
 // Positive
     if (branch == 1 && d_old < d_new && d_local < d_new) {
         if (pos_d_yield < pos_d_global) {
@@ -422,15 +423,19 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
     }
 
 // Calculate Force
-    if (branch == 20 || branch == 21 || branch == 22 || branch == 23 || branch == 24) {
-        f_new = (d_new - d_zero) * k_tangent;
-    } else if (branch == 25 || branch == 26) {
-        f_new = sign * f_yield + (d_new - sign * d_yield) * k_tangent;
-    }
+    // if (branch == 20 || branch == 21 || branch == 22 || branch == 23 || branch == 24) {
+    //     f_new = (d_new - d_zero) * k_tangent;
+    // } else if (branch == 25 || branch == 26) {
+    //     f_new = sign * f_yield + (d_new - sign * d_yield) * k_tangent;
+    // }
     if (branch == 0 || branch == 1 || branch == 2 || branch == 3 || branch == 4 || branch == 11 || branch == 12 || branch == 13 || branch == 14) {
         f_new = (d_new - d_zero) * k_tangent;
-    } else if (branch == 5 || branch == 6 || branch == 15 || branch == 16) {
-        f_new = sign * f_yield + (d_new - sign * d_yield) * k_tangent;
+    // } else if (branch == 5 || branch == 6 || branch == 15 || branch == 16) {
+    //     f_new = sign * f_yield + (d_new - sign * d_yield) * k_tangent;
+    } else if (branch == 5 || branch == 6) {
+        f_new = pos_f_yield + (d_new - pos_d_yield) * k_tangent;
+    } else if (branch == 5 || branch == 6) {
+        f_new = neg_f_yield + (d_new - neg_d_yield) * k_tangent;
     }
     return 0;
 }
