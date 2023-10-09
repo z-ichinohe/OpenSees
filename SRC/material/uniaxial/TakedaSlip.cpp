@@ -434,7 +434,7 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
     //     f_new = sign * f_yield + (d_new - sign * d_yield) * k_tangent;
     } else if (branch == 5 || branch == 6) {
         f_new = pos_f_yield + (d_new - pos_d_yield) * k_tangent;
-    } else if (branch == 5 || branch == 6) {
+    } else if (branch == 15 || branch == 16) {
         f_new = neg_f_yield + (d_new - neg_d_yield) * k_tangent;
     }
     return 0;
