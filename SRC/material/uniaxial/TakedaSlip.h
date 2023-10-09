@@ -58,7 +58,7 @@ private:
     int branch, cbranch;
 
     double k_tangent, ck_tangent;
-    double k_unload, ck_unload;
+    double k_unload_global, ck_unload_global;
 
     double f_new, cf_new;
     double d_new, cd_new;
