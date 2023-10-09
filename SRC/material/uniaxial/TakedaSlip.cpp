@@ -281,9 +281,7 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
             branch = 14;
             k_tangent = (neg_f_global - f_local) / (neg_d_global - d_local);
         }
-        std::cout << d_zero << "\n";
         d_zero = d_local - f_local / k_tangent;
-        std::cout << d_zero << "\n";
     }
     if (branch == 12 && d_new < d_zero + neg_f_crack / k_tangent) {
         if (neg_d_crack < neg_d_global && pos_d_global < pos_d_yield) {
