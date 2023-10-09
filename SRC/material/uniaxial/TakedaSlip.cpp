@@ -503,7 +503,7 @@ int TakedaSlip::revertToLastCommit(void)
 
 int TakedaSlip::revertToStart(void)
 {
-    branch = cbranch = 20;
+    branch = cbranch = 0;
     k_tangent = ck_tangent = k_crack;
     f_crack = d_crack * k_crack;
     f_yield = f_crack + k_yield * (d_yield - d_crack);
