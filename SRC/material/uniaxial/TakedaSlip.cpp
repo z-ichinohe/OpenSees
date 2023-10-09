@@ -122,9 +122,10 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
 
 // Unloading
 // Positive
-    if ((branch == 3 || branch == 4 || branch == 5 || branch == 6) && d_new < d_old) {
+    bool on_backbone;
+    on_backbone = (branch == 5 || branch == 6);
+    if ((branch == 3 || branch == 4 || on_backbone) && d_new < d_old) {
         branch = 1;
-        bool on_backbone = (branch == 5 || branch == 6);
         if (on_backbone) {
             pos_f_global = f_old;
             pos_d_global = d_old;
@@ -141,9 +142,9 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
         k_tangent = k_unload;
     }
 // Negative
-    if ((branch == 13 || branch == 14 || branch == 15 || branch == 16) && d_old < d_new) {
+    on_backbone = (branch == 15 || branch == 16);
+    if ((branch == 13 || branch == 14 || on_backbone) && d_old < d_new) {
         branch = 11;
-        bool on_backbone = (branch == 15 || branch == 16);
         if (on_backbone) {
             neg_f_global = f_old;
             neg_d_global = d_old;
