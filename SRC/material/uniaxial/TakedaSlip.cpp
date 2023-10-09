@@ -185,14 +185,14 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
             } else {
                 branch = 3;
                 const double neg_k_unload = (pos_f_crack - neg_f_yield) / (pos_d_crack - neg_d_yield) * pow(neg_d_yield / neg_d_global, unload_from_global_factor);
-                const double neg_d_zero = neg_d_global - neg_f_global / neg_k_unload;
-                const double k_pinch = pos_f_global / (pos_d_global - neg_d_zero) * pow(pos_d_global / (pos_d_global - neg_d_zero), k_pinch_factor);
+                const double global_d_zero = neg_d_global - neg_f_global / neg_k_unload;
+                const double k_pinch = pos_f_global / (pos_d_global - global_d_zero) * pow(pos_d_global / (pos_d_global - global_d_zero), k_pinch_factor);
                 d_pinch = (k_from_global * pos_d_global - k_pinch * d_zero - pos_f_global) / (k_from_global - k_pinch);
                 f_pinch = (d_pinch - d_zero) * k_pinch;
                 k_tangent = k_pinch;
-                std::cout << " d_zero " << d_zero << " neg_d_zero " << neg_d_zero << "\n";
+                std::cout << " d_zero " << d_zero << " global_d_zero " << global_d_zero << "\n";
                 // std::cout << "  3 k_pinch " << k_pinch << " k_from_global " << k_from_global << " k_to_global " << k_to_global << "\n";
-                // std::cout << "    pos_f_global " << pos_f_global << " pos_d_global " << pos_d_global << " neg_d_zero " << neg_d_zero  << "\n";
+                // std::cout << "    pos_f_global " << pos_f_global << " pos_d_global " << pos_d_global << " global_d_zero " << global_d_zero  << "\n";
             }
         }
         // d_zero remained
@@ -226,14 +226,14 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
             } else {
                 branch = 13;
                 const double pos_k_unload = (neg_f_crack - pos_f_yield) / (neg_d_crack - pos_d_yield) * pow(pos_d_yield / pos_d_global, unload_from_global_factor);
-                const double pos_d_zero = pos_d_global - pos_f_global / pos_k_unload;
-                const double k_pinch = neg_f_global / (neg_d_global - pos_d_zero) * pow(neg_d_global / (neg_d_global - pos_d_zero), k_pinch_factor);
+                const double global_d_zero = pos_d_global - pos_f_global / pos_k_unload;
+                const double k_pinch = neg_f_global / (neg_d_global - global_d_zero) * pow(neg_d_global / (neg_d_global - global_d_zero), k_pinch_factor);
                 d_pinch = (k_from_global * neg_d_global - k_pinch * d_zero - neg_f_global) / (k_from_global - k_pinch);
                 f_pinch = (d_pinch - d_zero) * k_pinch;
                 k_tangent = k_pinch;
-                std::cout << " d_zero " << d_zero << " pos_d_zero " << pos_d_zero << "\n";
+                std::cout << " d_zero " << d_zero << " global_d_zero " << global_d_zero << "\n";
                 // std::cout << " 13 k_pinch " << k_pinch << " k_from_global " << k_from_global << " k_to_global " << k_to_global << "\n";
-                // std::cout << "    neg_f_global " << neg_f_global << " neg_d_global " << neg_d_global << " pos_d_zero " << pos_d_zero  << "\n";
+                // std::cout << "    neg_f_global " << neg_f_global << " neg_d_global " << neg_d_global << " global_d_zero " << global_d_zero  << "\n";
             }
         }
         // d_zero remained
