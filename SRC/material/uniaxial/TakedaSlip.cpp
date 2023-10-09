@@ -185,7 +185,7 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
             } else {
                 branch = 3;
                 const double neg_k_unload = (pos_f_crack - neg_f_yield) / (pos_d_crack - neg_d_yield) * pow(neg_d_yield / neg_d_global, unload_from_global_factor);
-                const double neg_d_zero = pos_d_global - pos_f_global / neg_k_unload;
+                const double neg_d_zero = neg_d_global - neg_f_global / neg_k_unload;
                 const double k_pinch = pos_f_global / (pos_d_global - neg_d_zero) * pow(pos_d_global / (pos_d_global - neg_d_zero), k_pinch_factor);
                 d_pinch = (k_from_global * pos_d_global - k_pinch * d_zero - pos_f_global) / (k_from_global - k_pinch);
                 f_pinch = (d_pinch - d_zero) * k_pinch;
