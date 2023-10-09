@@ -122,10 +122,9 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
 
 // Unloading
 // Positive
-    bool on_backbone;
-    on_backbone = (branch == 5 || branch == 6);
-    if ((branch == 3 || branch == 4 || on_backbone) && d_new < d_old) {
+    if ((branch == 3 || branch == 4 || branch == 5 || branch == 6) && d_new < d_old) {
         branch = 1;
+        bool on_backbone = (branch == 5 || branch == 6);
         if (on_backbone) {
             pos_f_global = f_old;
             pos_d_global = d_old;
@@ -142,9 +141,9 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
         k_tangent = k_unload;
     }
 // Negative
-    on_backbone = (branch == 15 || branch == 16);
-    if ((branch == 13 || branch == 14 || on_backbone) && d_old < d_new) {
+    if ((branch == 13 || branch == 14 || branch == 15 || branch == 16) && d_old < d_new) {
         branch = 11;
+        bool on_backbone = (branch == 15 || branch == 16);
         if (on_backbone) {
             neg_f_global = f_old;
             neg_d_global = d_old;
@@ -272,11 +271,6 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
         k_tangent = k_yield;
         d_zero = pos_d_yield - pos_f_yield / k_tangent;
     }
-    // if (branch == 0 && pos_d_crack < d_new)  {
-    //     branch = 5;
-    //     k_tangent = k_yield;
-    //     d_zero = pos_d_yield - pos_f_yield / k_tangent;
-    // }
     if (branch == 5 && pos_d_yield < d_new) {
         branch = 6;
         k_tangent = k_plastic;
@@ -316,11 +310,6 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
         k_tangent = k_yield;
         d_zero = neg_d_yield - neg_f_yield / k_tangent;
     }
-    // if (branch == 0 && d_new < neg_d_crack)  {
-    //     branch = 15;
-    //     k_tangent = k_yield;
-    //     d_zero = neg_d_yield - neg_f_yield / k_tangent;
-    // }
     if (branch == 15 && d_new < neg_d_yield) {
         branch = 16;
         k_tangent = k_plastic;
@@ -328,13 +317,6 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
     }
 
 // Calculate Force
-    // if (branch == 0 || branch == 1 || branch == 2 || branch == 3 || branch == 4 || branch == 11 || branch == 12 || branch == 13 || branch == 14) {
-    //     f_new = (d_new - d_zero) * k_tangent;
-    // } else if (branch == 5 || branch == 6) {
-    //     f_new = pos_f_yield + (d_new - pos_d_yield) * k_tangent;
-    // } else if (branch == 15 || branch == 16) {
-    //     f_new = neg_f_yield + (d_new - neg_d_yield) * k_tangent;
-    // }
     f_new = (d_new - d_zero) * k_tangent;
 
     if (branch != ex_branch) {
