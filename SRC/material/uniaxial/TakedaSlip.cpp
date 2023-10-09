@@ -221,7 +221,7 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
         is = d_new > d_old ? 1 : 2;
         sign = d_new > d_old ? 1 : -1;
     }
-// Positive
+// Towards Positive
     if (branch == 11 && d_zero < d_new) {
         d_pinch = d_zero;
         f_pinch = 0;
@@ -256,7 +256,7 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
     if (branch == 12 && d_zero < d_new) {
         branch = 1;
     }
-// Negative
+// Towards Negative
     if (branch == 1 && d_new < d_zero) {
         d_pinch = d_zero;
         f_pinch = 0;
@@ -336,7 +336,7 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
     }
 // Positive
     if (branch == 1 && d_old < d_new && d_local < d_new) {
-        if (pos_d_global < pos_d_yield) {
+        if (pos_d_yield < pos_d_global) {
             branch = 3;
             k_tangent = (f_pinch - f_local) / (d_pinch - d_local);
         } else {
@@ -346,7 +346,7 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
         d_zero = d_local - f_local / k_tangent;
     }
     if (branch == 2 && d_zero + pos_f_crack / k_tangent < d_new) {
-        if (pos_d_global < pos_d_crack && neg_d_yield < neg_d_global) {
+        if (neg_d_yield < neg_d_global && pos_d_global < pos_d_crack) {
             branch = 5;
             k_tangent = k_yield;
             d_zero = pos_d_yield - pos_f_yield / k_tangent;
