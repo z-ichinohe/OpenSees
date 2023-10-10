@@ -157,7 +157,7 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
 // Forward to Reloading from Unloading
 // Towards Positive
     if (branch == 11 && d_zero < d_new) {
-        if (pos_d_global <= pos_d_crack) {
+        if (pos_d_global < pos_d_crack) {
             branch = 2;
         } else if (pos_d_global < pos_d_yield) {
             branch = 4;
@@ -196,7 +196,7 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
     }
 // Towards Negative
     if (branch == 1 && d_new < d_zero) {
-        if (neg_d_crack <= neg_d_global) {
+        if (neg_d_crack < neg_d_global) {
             branch = 12;
         } else if (neg_d_yield < neg_d_global) {
             branch = 14;
