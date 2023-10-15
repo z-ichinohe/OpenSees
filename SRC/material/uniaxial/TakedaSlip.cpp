@@ -18,6 +18,13 @@
 ****
 *********************************************************************/
 
+/*
+This is an implementation of the model provided in Takeda 1970. Some comments refering to rules are quoted from the article.
+Takeda, T., Sozen, M. A., Nielsen, N. N. "Reinforced Concrete Response to Simulated Earthquakes", Journal of the Structural Div. Proceeding of the American Society of Civil Engineers, Dec. 1970 p.2257
+https://www.obayashi.co.jp/technology/shoho/005/1971_005_04.pdf
+https://www.aij.or.jp/paper/detail.html?productId=119480
+*/
+
 #include <math.h>
 #include <TakedaSlip.h>
 #include <elementAPI.h>
@@ -112,16 +119,31 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
  // all variables to the last commit
     this->revertToLastCommit();
 
- // state determination algorithm: defines the current force and tangent stiffness
+    const int ex_branch = branch; // It's unused for the logic but left for debug with enabling branch-shift outputting lines at the last part of this function.
+// Determine a branch where a current state is on according to an algorithm and assign tangent stiffness.
+// Then calculate a current force.
     const double k_pinch_factor = 3;
     const double k_global_factor = 1;
     const double d_old = d_new;
     const double f_old = f_new;
     d_new = strain;
-    const int ex_branch = branch;
 
-// Unloading
-// Positive
+// When Unloading Occured
+    // 1). Condition: The cracking load, Pcr, has not been exceeded in one direction. The load is reversed from a load P in the other direction. The load P is smaller than the yield load Py.
+    //     Rule: Unloading follows a straight line from the position at load P to the point representing the cracking load in the other direction.
+    // 2). Condition: A load P1 is reached in one direction on the primary curve such that P1 is larger than Pcr but smaller than the yield load, Py. The load is then reversed to -P2 such that P2<P1.
+    //     Rule: Unload parallel to loading curve for tha half cycle.
+    //     KI_Memo: Unloading stiffness can never be larger than before.
+    // 3). Condition: A load P1 is reached in one direction such that P1 is larger than Pcr but not larger than the yield load, Py. The load is then reversed to -P3 such that P3>P1.
+    //     Rule: Unloading follows a straight line joining the point of return and the point representing cracking in the other direction.
+    //     KI_Memo: It's unloading same as rule 1 but reloading towards the peak point after crossing the x-axis.
+    // 5). Condition: The yield load, Py, is exceeded in one direction.
+    //     Rule: Unloading curve follows the slope given by the following expression adapted from Refelence 2.
+    //           kr = ky(Dy/D)^0.4
+    //           in which kr = slope of unloading curve
+    //                 ky = slope of a line joining the yield point in one direction to the cracking point in the other direction.
+    //                 D  = maximum deflection attained in the direction of the loading.
+    //                 Dy = deflection at yield.
     if ((branch == 3 || branch == 4 || branch == 5 || branch == 6) && d_new < d_old) {
         const bool on_backbone = (branch == 5 || branch == 6);
         branch = 1;
@@ -137,7 +159,6 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
         k_tangent = k_unload_global * (on_backbone ? 1 : unload_from_local_factor);
         d_zero = d_local - f_local / k_tangent;
     }
-// Negative
     if ((branch == 13 || branch == 14 || branch == 15 || branch == 16) && d_old < d_new) {
         const bool on_backbone = (branch == 15 || branch == 16);
         branch = 11;
@@ -154,8 +175,14 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
         d_zero = d_local - f_local / k_tangent;
     }
 
-// Forward to Reloading from Unloading
-// Towards Positive
+// When Reloading Occured
+    // 4). Condition: One or more loading cycles have occurred. The load is zero.
+    //     Rule: To construct the loading curve, connect the point at zero load to the point reached in the previous cycle, if that point lies on the primary curve or on a line aimed at a point on the primary curve. If the previous loading cycle contains no such point, go to the preceding cycle and continue the process until such a point is found. Then connect that point to the point at zero load.
+    //     Exception: If the yield point has not been exceeded and if the point at zero load is not located within the horizontal projection of the primary curve for that direction of loading, connect the point at zero load to the yield point to obtain the loading slope
+    // 6). Condition: The yield load is exceeded in one direction but the cracking load is not exceeded in the opposite direction.
+    //     Rule: Unloading follows Rule 5. Loading in the other direction continues as an extension of the unloading line up to the cracking load. Then, the loading curve is aimed at the yield point.
+    // 7). Condition: One or more loading cycles have occured.
+    //     Rule: If the immediately preceding quarter-cycle remained on one side of the zero-load axis, unload at the rate based on rules 2, 3, or 5, whichever governed in the previous loading history. If the immediately preceding quaeter-cycle crossed the zero-load axis, unload at 70% of the rate based on rules 2, 3, or, 5, whichever governed in the previous loading history, but not at a slope flatter than the immediately preceding loading slope.
     if (branch == 11 && d_zero < d_new) {
         if (pos_d_global < pos_d_crack) {
             branch = 2;
@@ -163,7 +190,7 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
             branch = 4;
             const double k_to_global = pos_f_global / (pos_d_global - d_zero);
             const double k_to_yield = pos_f_yield / (pos_d_yield - d_zero);
-            if (k_to_global <= k_to_yield) {
+            if (k_to_yield > k_to_global) {
                 pos_d_global = pos_d_yield;
                 pos_f_global = pos_f_yield;
             }
@@ -194,7 +221,6 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
         // k_tangent remained
         // d_zero remained
     }
-// Towards Negative
     if (branch == 1 && d_new < d_zero) {
         if (neg_d_crack < neg_d_global) {
             branch = 12;
@@ -202,7 +228,7 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
             branch = 14;
             const double k_to_global = neg_f_global / (neg_d_global - d_zero);
             const double k_to_yield = neg_f_yield / (neg_d_yield - d_zero);
-            if (k_to_global <= k_to_yield) {
+            if (k_to_yield > k_to_global) {
                 neg_d_global = neg_d_yield;
                 neg_f_global = neg_f_yield;
             }
@@ -232,8 +258,7 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
         branch = 11;
     }
 
-// Reloading
-// Positive
+// When Reloading Continues
     if (branch == 1 && d_old < d_new && d_local < d_new) {
         if (pos_d_yield < pos_d_global) {
             branch = 3;
@@ -272,7 +297,6 @@ int TakedaSlip::setTrialStrain(double strain, double strainRate)
         k_tangent = k_plastic;
         d_zero = pos_d_yield - pos_f_yield / k_tangent;
     }
-// Negative
     if (branch == 11 && d_new < d_old && d_new < d_local) {
         if (neg_d_global < neg_d_yield) {
             branch = 13;
