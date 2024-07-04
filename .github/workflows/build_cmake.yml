@@ -74,21 +74,14 @@ jobs:
           python -c "import sys; print(sys.path)"
           python3 -c "import opensees as ops; print(ops.version())"
           python ./EXAMPLES/ExamplePython/example_variable_analysis.py
-      - name: Upload OpenSees.exe
+      - name: Upload Artifacts
         uses: actions/upload-artifact@v4
         with:
-            name: OpenSees.exe
-            path: ./build/Release/OpenSees.exe
-      - name: Upload opensees.pyd
-        uses: actions/upload-artifact@v4
-        with:
-            name: opensees.pyd
-            path: ./build/Release/opensees.pyd
-      - name: Upload libiomp5md.dll
-        uses: actions/upload-artifact@v4
-        with:
-            name: libimp5md.dll
-            path: ./build/Release/libiomp5md.dll
+            name: OpenSees_Windows
+            path: |
+              ./build/Release/OpenSees.exe
+              ./build/Release/opensees.pyd
+              ./build/Release/libiomp5md.dll
 
   build-mac:
     name: Build Mac OS
@@ -138,16 +131,13 @@ jobs:
           python3 -c "import sys; print(sys.path)"
           python3 -c "import opensees as ops; print(ops.version())"
           python3 ./EXAMPLES/ExamplePython/example_variable_analysis.py
-      - name: Upload OpenSees-Mac
+      - name: Upload Artifacts
         uses: actions/upload-artifact@v4
         with:
-            name: OpenSees-Mac
-            path: ./build/OpenSees
-      - name: Upload opensees_mac.so
-        uses: actions/upload-artifact@v4
-        with:
-            name: opensees_mac.so
-            path: ./build/opensees.so
+            name: OpenSees_Mac
+            path: |
+              ./build/OpenSees
+              ./build/opensees.so
 
   build-ubuntu:
     name: Build Ubuntu
@@ -183,16 +173,13 @@ jobs:
           python3 -c "import sys; print(sys.path)"
           python3 -c "import opensees as ops; print(ops.version())"
           python3 ./EXAMPLES/ExamplePython/example_variable_analysis.py
-      - name: Upload OpenSees-Ubuntu
+      - name: Upload Artifacts
         uses: actions/upload-artifact@v4
         with:
-            name: OpenSees-Ubuntu
-            path: ./build/OpenSees
-      - name: Upload opensees_ubuntu.so
-        uses: actions/upload-artifact@v4
-        with:
-            name: opensees_ubuntu.so
-            path: ./build/opensees.so
+            name: OpenSees_Ubuntu
+            path: |
+              ./build/OpenSees
+              ./build/opensees.so
     #        # Simple MP sanity test
 #        - name: Verification OpenSeesPyMP
 #          run: |
