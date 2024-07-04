@@ -11,7 +11,7 @@ on:
 
 jobs:
   build-win:
-    name: Win Build
+    name: Build Windows10
     runs-on: windows-2019
     steps:
       - name: 2.1. Obtaining OpenSees Source Code
@@ -73,14 +73,14 @@ jobs:
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4
         with:
-            name: OpenSees
+            name: OpenSees-Win
             path: |
               ./build/Release/OpenSees.exe
               ./build/Release/opensees.pyd
               ./build/Release/libiomp5md.dll
 
   build-mac:
-    name: Mac OS
+    name: Build Mac OS
     runs-on: macos-latest
     timeout-minutes: 30
     steps:
@@ -127,13 +127,13 @@ jobs:
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4
         with:
-            name: OpenSees
+            name: OpenSees-Mac
             path: |
-              ./build/opensees
+              ./build/OpenSees
               ./build/opensees.so
 
   build-ubuntu:
-    name: Ubuntu
+    name: Build Ubuntu
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -158,7 +158,6 @@ jobs:
           cmake --build . --target OpenSees -j8
           cmake --build . --target OpenSeesPy -j8
           mv ./OpenSeesPy.so ./opensees.so
-          ls -all .
       - name: Verification OpenSeesPySP   # Simple Sanity Test
         run: |
           export PYTHONPATH="./build/"
@@ -167,10 +166,10 @@ jobs:
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4
         with:
-            name: OpenSees
+            name: OpenSees-Ubuntu
             path: |
-              ./opensees
-              ./opensees.so
+              ./build/OpenSees
+              ./build/opensees.so
   #        # Simple MP sanity test
 #        - name: Verification OpenSeesPyMP
 #          run: |
