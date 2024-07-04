@@ -8,7 +8,7 @@ on:
 
 jobs:
   build:
-    uses: z-ichinohe/OpenSees/.github/workflows/build_cmake.yml@continuous-delivery
+    uses: "z-ichinohe/OpenSees/.github/workflows/build_cmake.yml@continuous-delivery"
 
   deliver:
     name: Delivery
