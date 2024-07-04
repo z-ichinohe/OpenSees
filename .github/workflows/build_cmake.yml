@@ -2,7 +2,7 @@ name: Build on Push
 
 on:
   push:
-    # branches: [master]
+    branches: [master]
 
   pull_request:
     branches: [master]
@@ -37,7 +37,7 @@ jobs:
   #         ./install_fortran.bat $env:WINDOWS_BASEKIT_URL $env:WINDOWS_BASEKIT_COMPONENTS
   #         ./install_fortran.bat $env:WINDOWS_HPCKIT_URL $env:WINDOWS_HPCKIT_COMPONENTS
   #     - name: Python 3.11
-  #       uses: actions/setup-python@v4
+  #       uses: actions/setup-python@v5
   #       with:
   #         python-version: "3.11"
   #     - name: Conan
