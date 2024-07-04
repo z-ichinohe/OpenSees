@@ -8,7 +8,7 @@ on:
 
 jobs:
   build:
-    uses: "./.github/workflows/build_cmake.yml@continuous-delivery"
+    uses: "./.github/workflows/build_cmake.yml"
 
   deliver:
     name: Delivery
