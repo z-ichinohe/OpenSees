@@ -1,11 +1,104 @@
-name: Schedule Delivery
+name: Delivery
 
 on:
+  push:
   schedule:
     - cron: "0 0 1 * *"
   workflow_dispatch:
 
 jobs:
-  deliver-build:
-    name: Delivery Windows10
+  build:
+    uses: z-ichinohe/OpenSees/.github/workflows/build_cmake.yml@continuous-delivery
+
+  deliver:
+    name: Delivery
     runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - uses: build_cmake.yml
+      - name: Download all workflow run artifacts
+        uses: actions/download-artifact@v4
+      - name: version
+        run: echo '::set-output name=version::$(python3 -c "import opensees_ubuntu as ops; print(ops.version())")'
+        id: version
+      - name: Make Release
+        uses: actions/create-release@v1
+        id: create_release
+        with:
+          draft: false
+          prerelease: false
+          release_name: ${{ steps.version.outputs.version }}
+          tag_name: ${{ github.ref }}
+          body_path: CHANGELOG.md
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+
+      - name: Upload OpenSees.exe
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: OpenSees.exe
+          asset_name: OpenSees.exe
+          asset_content_type: application/octet-stream
+
+      - name: Upload opensees.pyd
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: opensees.pyd
+          asset_name: opensees.pyd
+          asset_content_type: application/octet-stream
+
+      - name: Upload libiomp5md.dll
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: libiomp5md.dll
+          asset_name: libiomp5md.dll
+          asset_content_type: application/octet-stream
+
+      - name: Upload OpenSees-Mac
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: OpenSees-Mac
+          asset_name: OpenSees-Mac
+          asset_content_type: application/octet-stream
+
+      - name: Upload opensees_mac.so
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: opensees_mac.so
+          asset_name: opensees_mac.so
+          asset_content_type: application/octet-stream
+
+      - name: Upload OpenSees-Ubuntu
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: OpenSees-Ubuntu
+          asset_name: OpenSees-Ubuntu
+          asset_content_type: application/octet-stream
+
+      - name: Upload opensees_ubuntu.so
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: opensees_ubuntu.so
+          asset_name: opensees_ubuntu.so
+          asset_content_type: application/octet-stream
