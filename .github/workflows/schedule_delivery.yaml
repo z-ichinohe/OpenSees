@@ -8,7 +8,7 @@ on:
 
 jobs:
   build:
-    uses: z-ichinohe/OpenSees/.github/workflows/build_cmake.yml@continuous-delivery
+    uses: "${{ github.repository }}/.github/workflows/build_cmake.yml@${{ github.ref }}"
 
   deliver:
     name: Delivery
@@ -29,15 +29,15 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ github.token }}
 
-      - name: Upload OpenSees_Windows
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_name: OpenSees_Windows
-          asset_path: OpenSees_Windows.zip
-          asset_content_type: application/x-zip-compressed
+      # - name: Upload OpenSees_Windows
+      #   uses: actions/upload-release-asset@v1
+      #   env:
+      #     GITHUB_TOKEN: ${{ github.token }}
+      #   with:
+      #     upload_url: ${{ steps.create_release.outputs.upload_url }}
+      #     asset_name: OpenSees_Windows
+      #     asset_path: OpenSees_Windows.zip
+      #     asset_content_type: application/x-zip-compressed
 
       - name: Upload OpenSees_Mac
         uses: actions/upload-release-asset@v1
