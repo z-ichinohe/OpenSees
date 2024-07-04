@@ -8,7 +8,7 @@ on:
 
 jobs:
   build:
-    uses: "${{ github.repository }}/.github/workflows/build_cmake.yml@${{ github.ref }}"
+    uses: "./.github/workflows/build_cmake.yml@continuous-delivery"
 
   deliver:
     name: Delivery
