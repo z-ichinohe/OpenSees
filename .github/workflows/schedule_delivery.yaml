@@ -17,17 +17,20 @@ jobs:
     steps:
       - name: Download all workflow run artifacts
         uses: actions/download-artifact@v4
-      - name: Check Download
-        run: ls -all
-
+      - name: Compress Directories
+        run: |
+          ls -all
+          tar -zcvf OpenSees_Mac.tar.gz OpenSees_Mac
+          tar -zcvf OpenSees_Ubuntu.tar.gz OpenSees_Ubuntu
+          
       - name: Make Release
         uses: actions/create-release@v1
         id: create_release
         with:
           draft: false
           prerelease: false
-          release_name: "Release1825"
-          tag_name: "3.6.0.1"
+          release_name: "Release1845"
+          tag_name: "3.6.0.2"
           # body_path: CHANGELOG.md
         env:
           GITHUB_TOKEN: ${{ github.token }}
@@ -48,9 +51,9 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_name: OpenSees_Mac
-          asset_path: OpenSees_Mac
-          asset_content_type: application/zip
+          asset_name: OpenSees_Mac.tar.gz
+          asset_path: OpenSees_Mac.tar.gz
+          asset_content_type: application/gzip
 
       - name: Upload OpenSees_Ubuntu
         uses: actions/upload-release-asset@v1
@@ -58,6 +61,6 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_name: OpenSees_Ubuntu
-          asset_path: OpenSees_Ubuntu
-          asset_content_type: application/zip
+          asset_name: OpenSees_Ubuntu.tar.gz
+          asset_path: OpenSees_Ubuntu.tar.gz
+          asset_content_type: application/gzip
