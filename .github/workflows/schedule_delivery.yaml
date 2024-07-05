@@ -26,8 +26,8 @@ jobs:
         with:
           draft: false
           prerelease: false
-          release_name: "Release 1255"
-          tag_name: "Tag 1255"
+          release_name: "Release1825"
+          tag_name: "3.6.0.1"
           # body_path: CHANGELOG.md
         env:
           GITHUB_TOKEN: ${{ github.token }}
