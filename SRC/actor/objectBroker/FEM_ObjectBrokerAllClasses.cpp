@@ -73,6 +73,7 @@
 #include "MultiplierMaterial.h"
 #include "TensionOnlyMaterial.h"
 #include "ASD_SMA_3K.h"
+#include "ASDConcrete1DMaterial.h"
 #include "Concrete01.h"
 #include "Concrete01WithSITC.h"
 #include "Concrete02.h"
@@ -360,6 +361,7 @@
 //#include "ZeroLengthND.h"
 
 #include "fourNodeQuad/FourNodeQuad.h"
+#include "fourNodeQuad/FourNodeQuad3d.h"
 #include "fourNodeQuad/EnhancedQuad.h"
 #include "fourNodeQuad/NineNodeMixedQuad.h"
 #include "fourNodeQuad/NineNodeQuad.h"
@@ -431,6 +433,7 @@
 #include "shell/ShellNLDKGT.h"
 #include "shell/ASDShellQ4.h" // Massimo Petracca
 #include "shell/ASDShellT3.h" // Massimo Petracca
+#include "shell/ShellANDeS.h"
 #include "brick/Brick.h"
 #include "brick/BbarBrick.h"
 #include "joint/Joint2D.h"		// Arash
@@ -890,7 +893,10 @@ FEM_ObjectBrokerAllClasses::getNewElement(int classTag)
       return new FourNodeQuadUP(); 	     
       
     case ELE_TAG_FourNodeQuad:  
-      return new FourNodeQuad(); 	     
+      return new FourNodeQuad(); 
+
+    case ELE_TAG_FourNodeQuad3d:  
+      return new FourNodeQuad3d(); 
       
     case ELE_TAG_Tri31:  
       return new Tri31(); 	     
@@ -1078,7 +1084,10 @@ FEM_ObjectBrokerAllClasses::getNewElement(int classTag)
     
     case ELE_TAG_ASDShellT3:   // Massimo Petracca
       return new ASDShellT3(); // Massimo Petracca
-    
+
+    case ELE_TAG_ShellANDeS:
+      return new ShellANDeS();
+	    
     case ELE_TAG_BbarBrick:
       return new BbarBrick();
             
@@ -1693,6 +1702,9 @@ FEM_ObjectBrokerAllClasses::getNewUniaxialMaterial(int classTag)
 
 	case MAT_TAG_ASD_SMA_3K:  
 	     return new ASD_SMA_3K();
+
+	case MAT_TAG_ASDConcrete1DMaterial:  
+	     return new ASDConcrete1DMaterial();
 
 	case MAT_TAG_Concrete01:  
 	     return new Concrete01();
