@@ -50,6 +50,7 @@ UPDATES, ENHANCEMENTS, OR MODIFICATIONS.
 #include <StrengthDegradation.h>
 #include <UniaxialMaterial.h>
 #include <UnloadingRule.h>
+#include <PipeMaterial.h>
 #include <elementAPI.h>
 
 #include <map>
@@ -280,6 +281,11 @@ void* OPS_Ratchet(void); // Yi Xiao
 void* OPS_APDVFD(void);
 void* OPS_APDMD(void);
 void* OPS_APDFMD(void);
+void* OPS_PipeMaterial();
+void* OPS_TzSandCPT(void);
+void* OPS_QbSandCPT(void);
+
+
 namespace {
 
 static UniaxialMaterial* theTestingUniaxialMaterial = 0;
@@ -643,6 +649,9 @@ static int setUpUniaxialMaterials(void) {
   uniaxialMaterialsMap.insert(std::make_pair("Trilinwp2", &OPS_Trilinwp2));
   uniaxialMaterialsMap.insert(std::make_pair("Ratchet", &OPS_Ratchet));
 
+  uniaxialMaterialsMap.insert(std::make_pair("Pipe", &OPS_PipeMaterial));
+  uniaxialMaterialsMap.insert(std::make_pair("TzSandCPT", &OPS_TzSandCPT));
+  uniaxialMaterialsMap.insert(std::make_pair("QbSandCPT", &OPS_QbSandCPT));
   return 0;
 }
 
@@ -663,16 +672,6 @@ static int setUpHystereticBackbones(void) {
       std::make_pair("Material", &OPS_MaterialBackbone));
   hystereticBackbonesMap.insert(std::make_pair(
       "ReeseStiffClayBelowWS", &OPS_ReeseStiffClayBelowWS));
-  hystereticBackbonesMap.insert(std::make_pair(
-      "ReeseStiffClayAboveWS", &OPS_ReeseStiffClayAboveWS));
-  hystereticBackbonesMap.insert(
-      std::make_pair("VuggyLimestone", &OPS_VuggyLimestone));
-  hystereticBackbonesMap.insert(
-      std::make_pair("CementedSoil", &OPS_CementedSoil));
-  hystereticBackbonesMap.insert(
-      std::make_pair("WeakRock", &OPS_WeakRock));
-  hystereticBackbonesMap.insert(
-      std::make_pair("LiquefiedSand", &OPS_LiquefiedSand));
   hystereticBackbonesMap.insert(
       std::make_pair("Raynor", &OPS_RaynorBackbone));
   hystereticBackbonesMap.insert(
@@ -769,7 +768,7 @@ int OPS_UniaxialMaterial() {
 
   // Now add the material to the modelBuilder
   if (OPS_addUniaxialMaterial(theMaterial) == false) {
-    opserr << "ERROR could not add uniaaialMaterial.\n";
+    opserr << "ERROR could not add uniaxialMaterial.\n";
     delete theMaterial;  // invoke the material objects
                          // destructor, otherwise mem leak
     return -1;

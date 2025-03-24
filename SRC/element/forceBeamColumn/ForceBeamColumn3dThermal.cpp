@@ -887,10 +887,7 @@ ForceBeamColumn3dThermal::computeReactions(double *p0)
         // Zero for integration
         //q.Zero();
         Vector* dataMixV;
-        if (data.Size() == 18)
-            dataMixV = new Vector(18);
-        else
-            dataMixV = new Vector(25);
+        dataMixV = new Vector(data.Size());
 
         *dataMixV = data;
 
@@ -4136,6 +4133,15 @@ ForceBeamColumn3dThermal::setParameter(const char **argv, int argc, Parameter &p
   if (strcmp(argv[0],"rho") == 0) {
     param.setValue(rho);
     return param.addObject(1, this);
+  }
+
+  // damping
+  if (strstr(argv[0], "damp") != 0) {
+
+    if (argc < 2 || !theDamping)
+      return -1;
+
+    return theDamping->setParameter(&argv[1], argc-1, param);
   }
 
   // section response -

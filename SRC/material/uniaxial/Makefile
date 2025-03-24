@@ -23,6 +23,7 @@ OBJS       = UniaxialMaterial.o \
         ElasticPPMaterial.o \
         ElasticBilin.o \
 	ParallelMaterial.o \
+	PipeMaterial.o \
 	ResilienceLow.o \
 	AxialSp.o \
 	BWBN.o \
@@ -166,6 +167,8 @@ OBJS       = UniaxialMaterial.o \
 	APDFMD.o \
 	APDMD.o \
 	APDVFD.o \
+	QbSandCPT.o \
+	TzSandCPT.o \
     TclModelBuilderUniaxialMaterialCommand.o
 
 all:         $(OBJS)

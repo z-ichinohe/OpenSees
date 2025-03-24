@@ -3206,7 +3206,7 @@ ForceBeamColumn3d::getInitialDeformations(Vector &v0)
 	//by SAJalali
 	else if (strcmp(argv[0], "energy") == 0)
 	{
-		theResponse = new ElementResponse(this, 10, 0.0);
+		theResponse = new ElementResponse(this, 2000, 0.0);
 	}
 
     if (theResponse == 0) {
@@ -3657,7 +3657,7 @@ ForceBeamColumn3d::getResponse(int responseID, Information &eleInfo)
     return -1;
   }
   //by SAJalali
-  else if (responseID == 10) {
+  else if (responseID == 2000) {
 	  double xi[maxNumSections];
 	  double L = crdTransf->getInitialLength();
 	  beamIntegr->getSectionWeights(numSections, L, xi);
@@ -3850,6 +3850,15 @@ ForceBeamColumn3d::setParameter(const char **argv, int argc, Parameter &param)
   if (strcmp(argv[0],"rho") == 0) {
     param.setValue(rho);
     return param.addObject(1, this);
+  }
+
+  // damping
+  if (strstr(argv[0], "damp") != 0) {
+
+    if (argc < 2 || !theDamping)
+      return -1;
+
+    return theDamping->setParameter(&argv[1], argc-1, param);
   }
 
   // section response -
