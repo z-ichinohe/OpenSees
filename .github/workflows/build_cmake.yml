@@ -2,7 +2,7 @@ name: CMake Build
 
 on:
   push:
-    branches: [master]
+    branches: [workflow-conan2]
 
   pull_request:
     branches: [master]
