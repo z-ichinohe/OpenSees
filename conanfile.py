@@ -30,10 +30,10 @@ class OpenSeesDependencies(ConanFile):
     # )
     build_policy = "missing"
     requires = (
-        "hdf5/1.14.6",
-        "tcl/8.6.13",
-        "zlib/1.3.1",
-        "eigen/3.4.0",
+        # "hdf5/1.14.6",
+        # "tcl/8.6.13",
+        # "zlib/1.3.1",
+        # "eigen/3.4.0",
         "libaec/1.1.2",
     )
     # Custom attributes for Bincrafters recipe conventions
