@@ -157,7 +157,7 @@ jobs:
           cd build
           conan profile detect
           conan install .. --output-folder=conan --build=missing
-          cmake .. -DCMAKE_BUILD_TYPE=Release -DCONAN_CMAKE_TOOLCHAIN_FILE=conan/conan_toolchain.cmake
+          cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_TOOLCHAIN_FILE=conan/conan_toolchain.cmake
           cmake --build . --target OpenSees -j8
           cmake --build . --target OpenSeesPy -j8
           mv ./OpenSeesPy.so ./opensees.so
