@@ -147,7 +147,7 @@ jobs:
       - name: Install other dependencies via apt
         run: |
           sudo apt-get update
-          sudo apt-get install -y openmpi-bin hdf5-tools hdf5-helpers libhdf5-dev libhdf5-doc libhdf5-serial-dev libeigen3-dev libscalapack-mpi-dev libaec-dev zlib1g-dev tcl
+          sudo apt-get install -y openmpi-bin hdf5-tools hdf5-helpers libhdf5-dev libhdf5-doc libhdf5-serial-dev libeigen3-dev libscalapack-mpi-dev libaec-dev libaec0 zlib1g-dev tcl
           ls -all /usr/lib/x86_64-linux-gnu/cmake/
       - name: 2.4.2. Building the OpenSees Applications and Python module
         run: |
