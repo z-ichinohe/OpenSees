@@ -144,19 +144,15 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-      # - name: Needed Applications and Libraries are already satisfied.
       - name: Install other dependencies via apt
         run: |
           sudo apt-get update
           sudo apt-get install -y openmpi-bin hdf5-tools hdf5-helpers libhdf5-dev libhdf5-doc libhdf5-serial-dev libeigen3-dev libscalapack-mpi-dev libaec-dev zlib1g-dev tcl
-      - name: Conan
-        run: pip install conan
+          ls -all /usr/lib
       - name: 2.4.2. Building the OpenSees Applications and Python module
         run: |
           mkdir build
           cd build
-          conan profile detect
-          conan install .. --output-folder=conan --build=missing
           cmake .. -DCMAKE_BUILD_TYPE=Release
           cmake --build . --target OpenSees -j8
           cmake --build . --target OpenSeesPy -j8
