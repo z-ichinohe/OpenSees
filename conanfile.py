@@ -3,6 +3,7 @@ import os
 from conan import ConanFile
 from conan.tools.cmake import CMake, CMakeDeps, CMakeToolchain
 
+
 class OpenSeesDependencies(ConanFile):
     name = "OpenSeesDependencies"
     version = "1.0.0"
